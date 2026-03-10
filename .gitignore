@@ -1,0 +1,12 @@
+.env
+.env.local
+*.env.*
+!*.env.example
+
+# Docker volumes
+postgres_data/
+
+# IDE
+.idea/
+.vscode/
+*.swp
