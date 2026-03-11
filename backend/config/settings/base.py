@@ -76,38 +76,54 @@ TEMPLATES = [
 WSGI_APPLICATION = "config.wsgi.application"
 
 # Database
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-    }
-}
+def _build_db_config():
+    """
+    Return DATABASES dict.  Priority:
+    1. DATABASE_URL  (Render managed DB, injected at runtime only)
+    2. Individual POSTGRES_* env vars  (local dev with Docker)
+    3. SQLite fallback  (build phase / local dev without DB)
+    """
+    from urllib.parse import urlparse
 
-_db_url = config("DATABASE_URL", default="")
-if _db_url:
-    import re
-    _m = re.match(
-        r"postgres(?:ql)?://([^:]+):([^@]+)@([^:]+):(\d+)/(.+)", _db_url
-    )
-    if _m:
-        DATABASES["default"].update(
-            {
-                "USER": _m.group(1),
-                "PASSWORD": _m.group(2),
-                "HOST": _m.group(3),
-                "PORT": _m.group(4),
-                "NAME": _m.group(5),
+    db_url = config("DATABASE_URL", default="")
+    if db_url:
+        r = urlparse(db_url)
+        if r.scheme in ("postgres", "postgresql") and r.hostname:
+            return {
+                "default": {
+                    "ENGINE": "django.db.backends.postgresql",
+                    "NAME": r.path.lstrip("/").split("?")[0],
+                    "USER": r.username or "",
+                    "PASSWORD": r.password or "",
+                    "HOST": r.hostname,
+                    "PORT": str(r.port) if r.port else "5432",
+                }
             }
-        )
-else:
-    DATABASES["default"].update(
-        {
-            "NAME": config("POSTGRES_DB", default="ecoe_db"),
-            "USER": config("POSTGRES_USER", default="ecoe_user"),
-            "PASSWORD": config("POSTGRES_PASSWORD", default="ecoe_pass"),
-            "HOST": config("DB_HOST", default="localhost"),
-            "PORT": config("DB_PORT", default="5432"),
+
+    pg_name = config("POSTGRES_DB", default="")
+    if pg_name:
+        return {
+            "default": {
+                "ENGINE": "django.db.backends.postgresql",
+                "NAME": pg_name,
+                "USER": config("POSTGRES_USER", default="ecoe_user"),
+                "PASSWORD": config("POSTGRES_PASSWORD", default="ecoe_pass"),
+                "HOST": config("DB_HOST", default="localhost"),
+                "PORT": config("DB_PORT", default="5432"),
+            }
         }
-    )
+
+    # No DB available (build phase) — use SQLite so collectstatic/migrate
+    # can run without a real database connection.
+    return {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
+    }
+
+
+DATABASES = _build_db_config()
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
