@@ -20,3 +20,13 @@ SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 SECURE_SSL_REDIRECT = False  # Render handles SSL termination
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
+
+# WhiteNoise compressed static files storage
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
