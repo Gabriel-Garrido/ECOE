@@ -17,6 +17,11 @@ import Badge from "../../../components/ui/Badge";
 import EmptyState, { ClipboardIcon } from "../../../components/ui/EmptyState";
 import { useToast } from "../../../context/ToastContext";
 
+/** Normalize decimal input: replace comma with dot for consistent parsing */
+function normalizeDecimal(value: string): string {
+  return value.replace(",", ".");
+}
+
 interface Props {
   exam: Exam;
 }
@@ -26,6 +31,7 @@ export default function StationsTab({ exam }: Props) {
   const { toast } = useToast();
   const [createOpen, setCreateOpen] = useState(false);
   const [_editStation, setEditStation] = useState<Station | null>(null);
+  const [togglingStationId, setTogglingStationId] = useState<number | null>(null);
 
   const { data: stations = [], isLoading } = useQuery({
     queryKey: ["stations", exam.id],
@@ -63,10 +69,17 @@ export default function StationsTab({ exam }: Props) {
   });
 
   const toggleMutation = useMutation({
-    mutationFn: toggleStation,
+    mutationFn: (id: number) => {
+      setTogglingStationId(id);
+      return toggleStation(id);
+    },
     onSuccess: () => {
+      setTogglingStationId(null);
       qc.invalidateQueries({ queryKey: ["stations", exam.id] });
       qc.invalidateQueries({ queryKey: ["exam", exam.id] });
+    },
+    onError: () => {
+      setTogglingStationId(null);
     },
   });
 
@@ -92,7 +105,7 @@ export default function StationsTab({ exam }: Props) {
             <span className="font-medium">
               {stations
                 .filter((s) => s.is_active)
-                .reduce((sum, s) => sum + parseFloat(s.weight_percent), 0)
+                .reduce((sum, s) => sum + (parseFloat(s.weight_percent) || 0), 0)
                 .toFixed(2)}
               %
             </span>{" "}
@@ -148,14 +161,12 @@ export default function StationsTab({ exam }: Props) {
                     {!isClosed ? (
                       <span className="inline-flex items-center gap-1">
                         <input
-                          type="number"
-                          min="0"
-                          max="100"
-                          step="0.01"
+                          type="text"
+                          inputMode="decimal"
                           defaultValue={station.weight_percent}
                           className="w-20 input py-1 text-center"
                           onBlur={(e) => {
-                            const val = e.target.value;
+                            const val = normalizeDecimal(e.target.value);
                             if (val !== station.weight_percent) {
                               updateMutation.mutate({
                                 id: station.id,
@@ -194,7 +205,8 @@ export default function StationsTab({ exam }: Props) {
                           variant="ghost"
                           size="sm"
                           onClick={() => toggleMutation.mutate(station.id)}
-                          loading={toggleMutation.isPending}
+                          loading={togglingStationId === station.id && toggleMutation.isPending}
+                          disabled={toggleMutation.isPending}
                         >
                           {station.is_active ? "Desactivar" : "Activar"}
                         </Button>
@@ -270,10 +282,8 @@ function StationForm({
       />
       <Input
         label="Ponderación (%)"
-        type="number"
-        min="0"
-        max="100"
-        step="0.01"
+        type="text"
+        inputMode="decimal"
         {...register("weight_percent")}
         helpText="Porcentaje que representa esta estación en la nota final"
       />

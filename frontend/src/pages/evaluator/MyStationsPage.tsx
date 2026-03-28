@@ -9,7 +9,7 @@ import { useAuth } from "../../context/AuthContext";
 import { ExamStatusBadge } from "../../components/ui/Badge";
 import Spinner from "../../components/ui/Spinner";
 import EmptyState, { ClipboardIcon } from "../../components/ui/EmptyState";
-import type { Exam, Station, Evaluation } from "../../types";
+import type { Exam, Station } from "../../types";
 
 export default function MyStationsPage() {
   const { user } = useAuth();
@@ -104,17 +104,24 @@ function StationCard({
   station: Station;
   totalStudents: number;
 }) {
-  const { data: evaluations = [] } = useQuery({
+  const { user } = useAuth();
+  const { data: allEvaluations = [] } = useQuery({
     queryKey: ["station-evaluations", station.id],
     queryFn: () => getStationEvaluations(station.id),
   });
 
-  const drafts = evaluations.filter((e: Evaluation) => e.status === "DRAFT").length;
-  const finals = evaluations.filter((e: Evaluation) => e.status === "FINAL").length;
-  const pending = totalStudents - drafts - finals;
+  // Scope to current evaluator's evaluations only
+  const evaluations = allEvaluations.filter((e) => e.evaluator === user?.id);
+
+  const drafts = evaluations.filter((e) => e.status === "DRAFT").length;
+  const finals = evaluations.filter((e) => e.status === "FINAL").length;
+  const evaluated = drafts + finals;
+  const pending = Math.max(0, totalStudents - evaluated);
   const progressPercent =
-    totalStudents > 0 ? ((drafts + finals) / totalStudents) * 100 : 0;
-  const allDone = totalStudents > 0 && finals === totalStudents;
+    totalStudents > 0
+      ? Math.min(100, (finals / totalStudents) * 100)
+      : 0;
+  const allDone = totalStudents > 0 && finals >= totalStudents;
 
   return (
     <Link
@@ -150,7 +157,8 @@ function StationCard({
       {totalStudents > 0 && (
         <div className="mt-3">
           <div className="flex items-center gap-2">
-            <div className="flex-1 bg-gray-200 rounded-full h-1.5">
+            <div className="flex-1 bg-gray-200 rounded-full h-1.5 overflow-hidden">
+              {/* Finalized portion (green or teal) */}
               <div
                 className={`h-1.5 rounded-full transition-all ${
                   allDone ? "bg-green-500" : "bg-brand-teal"
@@ -158,7 +166,7 @@ function StationCard({
                 style={{ width: `${progressPercent}%` }}
               />
             </div>
-            <span className="text-xs text-gray-400 tabular-nums">
+            <span className="text-xs text-gray-400 tabular-nums whitespace-nowrap">
               {finals}/{totalStudents}
             </span>
           </div>

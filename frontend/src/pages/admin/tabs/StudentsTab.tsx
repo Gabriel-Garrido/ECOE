@@ -119,7 +119,7 @@ export default function StudentsTab({ exam }: Props) {
           <div className="flex items-center justify-between">
             <p className="text-green-800 font-medium text-sm">
               Importación completada: {importResult.created} creados,{" "}
-              {importResult.updated} actualizados.
+              {importResult.updated ?? 0} actualizados.
             </p>
             <button onClick={() => setImportResult(null)} className="text-gray-400 hover:text-gray-600">×</button>
           </div>

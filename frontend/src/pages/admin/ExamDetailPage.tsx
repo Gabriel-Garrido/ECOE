@@ -85,7 +85,7 @@ export default function ExamDetailPage() {
   // Compute tab metadata
   const activeStations = stations.filter((s) => s.is_active);
   const weightSum = activeStations.reduce(
-    (sum, s) => sum + parseFloat(s.weight_percent),
+    (sum, s) => sum + (parseFloat(s.weight_percent) || 0),
     0,
   );
   const assignedStationIds = new Set(assignments.map((a) => a.station));

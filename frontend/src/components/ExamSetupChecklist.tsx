@@ -37,7 +37,7 @@ export default function ExamSetupChecklist({ examId, onNavigateTab }: Props) {
 
   const activeStations = stations.filter((s) => s.is_active);
   const weightSum = activeStations.reduce(
-    (sum, s) => sum + parseFloat(s.weight_percent),
+    (sum, s) => sum + (parseFloat(s.weight_percent) || 0),
     0,
   );
   const assignedStationIds = new Set(assignments.map((a) => a.station));
@@ -53,7 +53,7 @@ export default function ExamSetupChecklist({ examId, onNavigateTab }: Props) {
       id: "rubrics",
       label: "Configurar pautas en todas las estaciones",
       completed:
-        stations.length > 0 &&
+        activeStations.length > 0 &&
         activeStations.every((s) => s.rubric_items_count > 0),
       tabId: "stations",
     },
@@ -61,7 +61,7 @@ export default function ExamSetupChecklist({ examId, onNavigateTab }: Props) {
       id: "scales",
       label: "Configurar escalas de notas",
       completed:
-        stations.length > 0 &&
+        activeStations.length > 0 &&
         activeStations.every((s) => s.grade_scale_count > 0),
       tabId: "stations",
     },
@@ -81,7 +81,7 @@ export default function ExamSetupChecklist({ examId, onNavigateTab }: Props) {
     },
     {
       id: "weights",
-      label: `Ponderaciones suman 100% (actualmente ${weightSum.toFixed(1)}%)`,
+      label: `Ponderaciones suman 100% (actualmente ${weightSum.toFixed(2)}%)`,
       completed: Math.abs(weightSum - 100) < 0.01,
       tabId: "stations",
     },

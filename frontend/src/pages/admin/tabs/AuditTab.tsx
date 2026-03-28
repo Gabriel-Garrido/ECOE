@@ -69,9 +69,11 @@ export default function AuditTab({ examId }: Props) {
                   {ACTION_LABELS[log.action] || log.action}
                 </td>
                 <td className="px-4 py-3 text-gray-500 hidden md:table-cell text-xs">
-                  {Object.entries(log.payload_json)
-                    .map(([k, v]) => `${k}: ${v}`)
-                    .join(" | ")}
+                  {log.payload_json
+                    ? Object.entries(log.payload_json)
+                        .map(([k, v]) => `${k}: ${typeof v === "object" ? JSON.stringify(v) : String(v ?? "")}`)
+                        .join(" | ")
+                    : ""}
                 </td>
               </tr>
             ))}

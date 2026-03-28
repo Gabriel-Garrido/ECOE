@@ -301,7 +301,7 @@ export default function StationDetailPage() {
             <div className="flex items-center justify-between">
               <p>
                 Importación: <strong>{importResult.created}</strong> creados,{" "}
-                <strong>{importResult.updated}</strong> actualizados
+                <strong>{importResult.updated ?? 0}</strong> actualizados
                 {importResult.errors.length > 0 && (
                   <span className="text-red-600 ml-2">
                     ({importResult.errors.length} errores)

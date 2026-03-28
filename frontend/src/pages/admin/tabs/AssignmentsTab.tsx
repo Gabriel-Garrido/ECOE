@@ -77,6 +77,7 @@ export default function AssignmentsTab({ exam }: Props) {
       qc.invalidateQueries({ queryKey: ["assignments", exam.id] });
       qc.invalidateQueries({ queryKey: ["exam", exam.id] });
     },
+    onError: () => toast.error("Error al eliminar la asignación."),
   });
 
   const isClosed = exam.status === "CLOSED";

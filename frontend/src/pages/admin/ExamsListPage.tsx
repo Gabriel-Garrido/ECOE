@@ -35,6 +35,7 @@ export default function ExamsListPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [error, setError] = useState("");
   const [confirmAction, setConfirmAction] = useState<{ type: "publish" | "close"; examId: number } | null>(null);
+  const [mutatingExamId, setMutatingExamId] = useState<number | null>(null);
 
   const { data: exams = [], isLoading } = useQuery({
     queryKey: ["exams"],
@@ -60,10 +61,12 @@ export default function ExamsListPage() {
   const publishMutation = useMutation({
     mutationFn: publishExam,
     onSuccess: () => {
+      setMutatingExamId(null);
       qc.invalidateQueries({ queryKey: ["exams"] });
       toast.success("Evaluación publicada");
     },
     onError: (e: unknown) => {
+      setMutatingExamId(null);
       toast.error(
         (
           e as { response?: { data?: { errors?: string[]; detail?: string } } }
@@ -78,10 +81,14 @@ export default function ExamsListPage() {
   const closeMutation = useMutation({
     mutationFn: closeExam,
     onSuccess: () => {
+      setMutatingExamId(null);
       qc.invalidateQueries({ queryKey: ["exams"] });
       toast.success("Evaluación cerrada");
     },
-    onError: () => toast.error("Error al cerrar la evaluación."),
+    onError: () => {
+      setMutatingExamId(null);
+      toast.error("Error al cerrar la evaluación.");
+    },
   });
 
   const {
@@ -196,7 +203,8 @@ export default function ExamsListPage() {
                       {exam.status === "DRAFT" && (
                         <Button
                           size="sm"
-                          loading={publishMutation.isPending}
+                          loading={mutatingExamId === exam.id && publishMutation.isPending}
+                          disabled={publishMutation.isPending || closeMutation.isPending}
                           onClick={() => setConfirmAction({ type: "publish", examId: exam.id })}
                         >
                           Publicar
@@ -206,6 +214,8 @@ export default function ExamsListPage() {
                         <Button
                           variant="danger"
                           size="sm"
+                          loading={mutatingExamId === exam.id && closeMutation.isPending}
+                          disabled={publishMutation.isPending || closeMutation.isPending}
                           onClick={() => setConfirmAction({ type: "close", examId: exam.id })}
                         >
                           Cerrar
@@ -280,7 +290,10 @@ export default function ExamsListPage() {
       <ConfirmDialog
         isOpen={confirmAction?.type === "publish"}
         onConfirm={() => {
-          if (confirmAction) publishMutation.mutate(confirmAction.examId);
+          if (confirmAction) {
+            setMutatingExamId(confirmAction.examId);
+            publishMutation.mutate(confirmAction.examId);
+          }
           setConfirmAction(null);
         }}
         onCancel={() => setConfirmAction(null)}
@@ -291,7 +304,10 @@ export default function ExamsListPage() {
       <ConfirmDialog
         isOpen={confirmAction?.type === "close"}
         onConfirm={() => {
-          if (confirmAction) closeMutation.mutate(confirmAction.examId);
+          if (confirmAction) {
+            setMutatingExamId(confirmAction.examId);
+            closeMutation.mutate(confirmAction.examId);
+          }
           setConfirmAction(null);
         }}
         onCancel={() => setConfirmAction(null)}

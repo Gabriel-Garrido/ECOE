@@ -39,7 +39,7 @@ export default function Badge({
 
 export function ExamStatusBadge({ status }: { status: string }) {
   if (status === "DRAFT") return <Badge variant="yellow">Borrador</Badge>;
-  if (status === "PUBLISHED") return <Badge variant="blue">Publicado</Badge>;
+  if (status === "PUBLISHED") return <Badge variant="teal">Publicado</Badge>;
   if (status === "CLOSED") return <Badge variant="gray">Cerrado</Badge>;
   return <Badge>{status}</Badge>;
 }
@@ -50,8 +50,8 @@ export function EvalStatusBadge({ status }: { status: string }) {
   return <Badge>{status}</Badge>;
 }
 
-export function ApprovedBadge({ approved }: { approved: boolean | null }) {
-  if (approved === null) return <Badge variant="gray">Sin datos</Badge>;
+export function ApprovedBadge({ approved }: { approved: boolean | null | undefined }) {
+  if (approved == null) return <Badge variant="gray">Sin datos</Badge>;
   return approved ? (
     <Badge variant="green">Aprobado</Badge>
   ) : (
