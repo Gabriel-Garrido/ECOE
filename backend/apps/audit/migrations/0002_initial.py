@@ -10,14 +10,21 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('audit', '0001_initial'),
+        ("audit", "0001_initial"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='auditlog',
-            name='actor',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='audit_logs', to=settings.AUTH_USER_MODEL, verbose_name='Usuario'),
+            model_name="auditlog",
+            name="actor",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="audit_logs",
+                to=settings.AUTH_USER_MODEL,
+                verbose_name="Usuario",
+            ),
         ),
     ]

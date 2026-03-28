@@ -1,16 +1,16 @@
-import React from 'react'
-import clsx from 'clsx'
+import React from "react";
+import clsx from "clsx";
 
 interface SpinnerProps {
-  size?: 'sm' | 'md' | 'lg'
-  className?: string
+  size?: "sm" | "md" | "lg";
+  className?: string;
 }
 
-export default function Spinner({ size = 'md', className }: SpinnerProps) {
-  const sizes = { sm: 'h-4 w-4', md: 'h-6 w-6', lg: 'h-10 w-10' }
+export default function Spinner({ size = "md", className }: SpinnerProps) {
+  const sizes = { sm: "h-4 w-4", md: "h-6 w-6", lg: "h-10 w-10" };
   return (
     <svg
-      className={clsx('animate-spin text-primary-600', sizes[size], className)}
+      className={clsx("animate-spin text-brand-teal", sizes[size], className)}
       xmlns="http://www.w3.org/2000/svg"
       fill="none"
       viewBox="0 0 24 24"
@@ -29,5 +29,5 @@ export default function Spinner({ size = 'md', className }: SpinnerProps) {
         d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
       />
     </svg>
-  )
+  );
 }

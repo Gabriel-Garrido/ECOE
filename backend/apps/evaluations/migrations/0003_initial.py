@@ -10,39 +10,63 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('evaluations', '0002_initial'),
+        ("evaluations", "0002_initial"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('exams', '0001_initial'),
-        ('students', '0001_initial'),
+        ("exams", "0001_initial"),
+        ("students", "0001_initial"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='evaluation',
-            name='evaluator',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='evaluations', to=settings.AUTH_USER_MODEL, verbose_name='Evaluador'),
+            model_name="evaluation",
+            name="evaluator",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="evaluations",
+                to=settings.AUTH_USER_MODEL,
+                verbose_name="Evaluador",
+            ),
         ),
         migrations.AddField(
-            model_name='evaluation',
-            name='exam',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='evaluations', to='exams.exam', verbose_name='ECOE'),
+            model_name="evaluation",
+            name="exam",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="evaluations",
+                to="exams.exam",
+                verbose_name="ECOE",
+            ),
         ),
         migrations.AddField(
-            model_name='evaluation',
-            name='station',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='evaluations', to='exams.station', verbose_name='Estación'),
+            model_name="evaluation",
+            name="station",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="evaluations",
+                to="exams.station",
+                verbose_name="Estación",
+            ),
         ),
         migrations.AddField(
-            model_name='evaluation',
-            name='student',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='evaluations', to='students.student', verbose_name='Estudiante'),
+            model_name="evaluation",
+            name="student",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="evaluations",
+                to="students.student",
+                verbose_name="Estudiante",
+            ),
         ),
         migrations.AlterUniqueTogether(
-            name='evaluationitemscore',
-            unique_together={('evaluation', 'rubric_item')},
+            name="evaluationitemscore",
+            unique_together={("evaluation", "rubric_item")},
         ),
         migrations.AddConstraint(
-            model_name='evaluation',
-            constraint=models.UniqueConstraint(condition=models.Q(('status', 'FINAL')), fields=('exam', 'station', 'student'), name='unique_final_evaluation'),
+            model_name="evaluation",
+            constraint=models.UniqueConstraint(
+                condition=models.Q(("status", "FINAL")),
+                fields=("exam", "station", "student"),
+                name="unique_final_evaluation",
+            ),
         ),
     ]

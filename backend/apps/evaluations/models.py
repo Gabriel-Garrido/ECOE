@@ -10,13 +10,21 @@ class Evaluation(models.Model):
         "exams.Exam",
         on_delete=models.CASCADE,
         related_name="evaluations",
-        verbose_name="ECOE",
+        verbose_name="Evaluación",
     )
     station = models.ForeignKey(
         "exams.Station",
         on_delete=models.CASCADE,
         related_name="evaluations",
         verbose_name="Estación",
+    )
+    variant = models.ForeignKey(
+        "exams.StationVariant",
+        on_delete=models.SET_NULL,
+        related_name="evaluations",
+        verbose_name="Variante",
+        null=True,
+        blank=True,
     )
     student = models.ForeignKey(
         "students.Student",
@@ -28,7 +36,7 @@ class Evaluation(models.Model):
         "users.User",
         on_delete=models.CASCADE,
         related_name="evaluations",
-        verbose_name="Evaluador",
+        verbose_name="Educador",
     )
     status = models.CharField(
         max_length=10,
@@ -47,9 +55,7 @@ class Evaluation(models.Model):
         verbose_name="Nota",
     )
     general_comment = models.TextField(blank=True, verbose_name="Observación general")
-    finalized_at = models.DateTimeField(
-        null=True, blank=True, verbose_name="Fecha finalización"
-    )
+    finalized_at = models.DateTimeField(null=True, blank=True, verbose_name="Fecha finalización")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

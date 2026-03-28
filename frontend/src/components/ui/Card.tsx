@@ -1,16 +1,26 @@
-import React from 'react'
-import clsx from 'clsx'
+import React from "react";
+import clsx from "clsx";
 
 interface CardProps {
-  title?: string
-  children: React.ReactNode
-  className?: string
-  actions?: React.ReactNode
+  title?: string;
+  children: React.ReactNode;
+  className?: string;
+  actions?: React.ReactNode;
 }
 
-export default function Card({ title, children, className, actions }: CardProps) {
+export default function Card({
+  title,
+  children,
+  className,
+  actions,
+}: CardProps) {
   return (
-    <div className={clsx('bg-white rounded-xl shadow-sm border border-gray-200', className)}>
+    <div
+      className={clsx(
+        "bg-white rounded-xl shadow-sm border border-gray-200",
+        className,
+      )}
+    >
       {(title || actions) && (
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           {title && <h3 className="font-semibold text-gray-900">{title}</h3>}
@@ -19,5 +29,5 @@ export default function Card({ title, children, className, actions }: CardProps)
       )}
       <div className="p-6">{children}</div>
     </div>
-  )
+  );
 }

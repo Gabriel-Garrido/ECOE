@@ -1,4 +1,4 @@
-from decimal import ROUND_HALF_UP, Decimal
+from decimal import Decimal
 
 from django.db import transaction
 from django.shortcuts import get_object_or_404
@@ -45,9 +45,11 @@ class EvaluationListCreateView(APIView):
         if not self._check_access(request, station):
             return Response(status=status.HTTP_403_FORBIDDEN)
 
-        qs = Evaluation.objects.filter(station=station).select_related(
-            "student", "evaluator"
-        ).prefetch_related("item_scores__rubric_item")
+        qs = (
+            Evaluation.objects.filter(station=station)
+            .select_related("student", "evaluator")
+            .prefetch_related("item_scores__rubric_item")
+        )
 
         if request.user.role == User.Role.EVALUATOR:
             qs = qs.filter(evaluator=request.user)
@@ -62,9 +64,7 @@ class EvaluationListCreateView(APIView):
             return Response(status=status.HTTP_403_FORBIDDEN)
 
         if station.exam.status == "CLOSED":
-            return Response(
-                {"detail": "ECOE cerrado."}, status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({"detail": "Evaluación cerrada."}, status=status.HTTP_400_BAD_REQUEST)
 
         student_id = request.data.get("student_id")
         if not student_id:
@@ -77,7 +77,7 @@ class EvaluationListCreateView(APIView):
         # Check student is enrolled in exam
         if not station.exam.exam_students.filter(student=student).exists():
             return Response(
-                {"detail": "El estudiante no está inscrito en este ECOE."},
+                {"detail": "El estudiante no está inscrito en esta evaluación."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -104,16 +104,14 @@ class EvaluationListCreateView(APIView):
             # Create EvaluationItemScore entries for all rubric items (idempotent)
             rubric_items = station.rubric_items.all()
             for item in rubric_items:
-                EvaluationItemScore.objects.get_or_create(
-                    evaluation=evaluation, rubric_item=item
-                )
+                EvaluationItemScore.objects.get_or_create(evaluation=evaluation, rubric_item=item)
 
         evaluation.refresh_from_db()
         # Prefetch for serializer
         evaluation = (
             Evaluation.objects.filter(pk=evaluation.pk)
             .prefetch_related("item_scores__rubric_item")
-            .select_related("student", "evaluator", "station", "exam")
+            .select_related("student", "evaluator", "station", "variant", "exam")
             .first()
         )
         serializer = EvaluationSerializer(evaluation)
@@ -131,9 +129,9 @@ class EvaluationRetrieveUpdateView(APIView):
 
     def get_evaluation(self, pk):
         return get_object_or_404(
-            Evaluation.objects.prefetch_related(
-                "item_scores__rubric_item"
-            ).select_related("student", "evaluator", "station", "exam"),
+            Evaluation.objects.prefetch_related("item_scores__rubric_item").select_related(
+                "student", "evaluator", "station", "exam"
+            ),
             pk=pk,
         )
 
@@ -161,9 +159,7 @@ class EvaluationRetrieveUpdateView(APIView):
             return Response(status=status.HTTP_403_FORBIDDEN)
 
         if evaluation.exam.status == "CLOSED":
-            return Response(
-                {"detail": "ECOE cerrado."}, status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({"detail": "Evaluación cerrada."}, status=status.HTTP_400_BAD_REQUEST)
 
         # Only admin can edit FINAL evaluations
         if evaluation.status == Evaluation.Status.FINAL and request.user.role != User.Role.ADMIN:
@@ -186,16 +182,12 @@ class EvaluationRetrieveUpdateView(APIView):
                 if not score_id:
                     continue
                 try:
-                    score = EvaluationItemScore.objects.get(
-                        id=score_id, evaluation=evaluation
-                    )
+                    score = EvaluationItemScore.objects.get(id=score_id, evaluation=evaluation)
                     points = score_data.get("points")
                     if points is not None:
                         points_dec = Decimal(str(points))
                         if points_dec < Decimal("0"):
-                            errors.append(
-                                f"Ítem {score_id}: el puntaje no puede ser negativo."
-                            )
+                            errors.append(f"Ítem {score_id}: el puntaje no puede ser negativo.")
                             continue
                         if points_dec > score.rubric_item.max_points:
                             errors.append(
@@ -220,7 +212,7 @@ class EvaluationRetrieveUpdateView(APIView):
         evaluation = (
             Evaluation.objects.filter(pk=evaluation.pk)
             .prefetch_related("item_scores__rubric_item")
-            .select_related("student", "evaluator", "station", "exam")
+            .select_related("student", "evaluator", "station", "variant", "exam")
             .first()
         )
         return Response(EvaluationSerializer(evaluation).data)
@@ -231,9 +223,9 @@ class FinalizeEvaluationView(APIView):
 
     def post(self, request, pk):
         evaluation = get_object_or_404(
-            Evaluation.objects.prefetch_related(
-                "item_scores__rubric_item"
-            ).select_related("station", "exam", "student"),
+            Evaluation.objects.prefetch_related("item_scores__rubric_item").select_related(
+                "station", "exam", "student"
+            ),
             pk=pk,
         )
 
@@ -249,14 +241,10 @@ class FinalizeEvaluationView(APIView):
             )
 
         if evaluation.exam.status == "CLOSED":
-            return Response(
-                {"detail": "ECOE cerrado."}, status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({"detail": "Evaluación cerrada."}, status=status.HTTP_400_BAD_REQUEST)
 
         # Validate all items have points
-        incomplete = [
-            s for s in evaluation.item_scores.all() if s.points is None
-        ]
+        incomplete = [s for s in evaluation.item_scores.all() if s.points is None]
         if incomplete:
             return Response(
                 {
@@ -277,8 +265,10 @@ class FinalizeEvaluationView(APIView):
             total = sum(s.points for s in evaluation.item_scores.all())
             evaluation.total_points = total
 
-            # Calculate grade
-            evaluation.grade = calculate_grade(evaluation.station, total)
+            # Calculate grade (pass variant if set)
+            evaluation.grade = calculate_grade(
+                evaluation.station, total, variant=evaluation.variant
+            )
 
             evaluation.status = Evaluation.Status.FINAL
             evaluation.finalized_at = timezone.now()
@@ -301,7 +291,7 @@ class FinalizeEvaluationView(APIView):
         evaluation = (
             Evaluation.objects.filter(pk=evaluation.pk)
             .prefetch_related("item_scores__rubric_item")
-            .select_related("student", "evaluator", "station", "exam")
+            .select_related("student", "evaluator", "station", "variant", "exam")
             .first()
         )
         return Response(EvaluationSerializer(evaluation).data)
@@ -323,9 +313,7 @@ class ReopenEvaluationView(APIView):
             )
 
         if evaluation.exam.status == "CLOSED":
-            return Response(
-                {"detail": "ECOE cerrado."}, status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({"detail": "Evaluación cerrada."}, status=status.HTTP_400_BAD_REQUEST)
 
         evaluation.status = Evaluation.Status.DRAFT
         evaluation.finalized_at = None
@@ -359,14 +347,10 @@ class ExamResultsView(APIView):
 
         # Evaluators can only see results if assigned in the exam
         if request.user.role == User.Role.EVALUATOR:
-            if not StationAssignment.objects.filter(
-                exam=exam, evaluator=request.user
-            ).exists():
+            if not StationAssignment.objects.filter(exam=exam, evaluator=request.user).exists():
                 return Response(status=status.HTTP_403_FORBIDDEN)
 
-        active_stations = list(
-            exam.stations.filter(is_active=True).order_by("order", "id")
-        )
+        active_stations = list(exam.stations.filter(is_active=True).order_by("order", "id"))
         results = calculate_final_grade(exam)
 
         return Response(
@@ -393,12 +377,10 @@ class ExamResultsView(APIView):
                             "full_name": r["student"].full_name,
                             "email": r["student"].email,
                         },
-                        "station_grades": {
-                            str(k): str(v) for k, v in r["station_grades"].items()
-                        },
-                        "final_grade": str(r["final_grade"])
-                        if r["final_grade"] is not None
-                        else None,
+                        "station_grades": {str(k): str(v) for k, v in r["station_grades"].items()},
+                        "final_grade": (
+                            str(r["final_grade"]) if r["final_grade"] is not None else None
+                        ),
                         "approved": r["approved"],
                     }
                     for r in results

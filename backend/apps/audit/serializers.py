@@ -9,8 +9,14 @@ class AuditLogSerializer(serializers.ModelSerializer):
     class Meta:
         model = AuditLog
         fields = [
-            "id", "actor", "actor_name", "action",
-            "entity_type", "entity_id", "payload_json", "created_at",
+            "id",
+            "actor",
+            "actor_name",
+            "action",
+            "entity_type",
+            "entity_id",
+            "payload_json",
+            "created_at",
         ]
 
     def get_actor_name(self, obj) -> str:

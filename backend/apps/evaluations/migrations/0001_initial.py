@@ -8,41 +8,95 @@ class Migration(migrations.Migration):
 
     initial = True
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         migrations.CreateModel(
-            name='Evaluation',
+            name="Evaluation",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('status', models.CharField(choices=[('DRAFT', 'Borrador'), ('FINAL', 'Final')], default='DRAFT', max_length=10, verbose_name='Estado')),
-                ('total_points', models.DecimalField(blank=True, decimal_places=4, max_digits=8, null=True, verbose_name='Total puntos')),
-                ('grade', models.DecimalField(blank=True, decimal_places=4, max_digits=6, null=True, verbose_name='Nota')),
-                ('general_comment', models.TextField(blank=True, verbose_name='Observación general')),
-                ('finalized_at', models.DateTimeField(blank=True, null=True, verbose_name='Fecha finalización')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[("DRAFT", "Borrador"), ("FINAL", "Final")],
+                        default="DRAFT",
+                        max_length=10,
+                        verbose_name="Estado",
+                    ),
+                ),
+                (
+                    "total_points",
+                    models.DecimalField(
+                        blank=True,
+                        decimal_places=4,
+                        max_digits=8,
+                        null=True,
+                        verbose_name="Total puntos",
+                    ),
+                ),
+                (
+                    "grade",
+                    models.DecimalField(
+                        blank=True, decimal_places=4, max_digits=6, null=True, verbose_name="Nota"
+                    ),
+                ),
+                (
+                    "general_comment",
+                    models.TextField(blank=True, verbose_name="Observación general"),
+                ),
+                (
+                    "finalized_at",
+                    models.DateTimeField(blank=True, null=True, verbose_name="Fecha finalización"),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
             ],
             options={
-                'verbose_name': 'Evaluación',
-                'verbose_name_plural': 'Evaluaciones',
+                "verbose_name": "Evaluación",
+                "verbose_name_plural": "Evaluaciones",
             },
         ),
         migrations.CreateModel(
-            name='EvaluationItemScore',
+            name="EvaluationItemScore",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('points', models.DecimalField(blank=True, decimal_places=2, max_digits=7, null=True, verbose_name='Puntaje')),
-                ('comment', models.TextField(blank=True, verbose_name='Observación')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('evaluation', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='item_scores', to='evaluations.evaluation', verbose_name='Evaluación')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                (
+                    "points",
+                    models.DecimalField(
+                        blank=True,
+                        decimal_places=2,
+                        max_digits=7,
+                        null=True,
+                        verbose_name="Puntaje",
+                    ),
+                ),
+                ("comment", models.TextField(blank=True, verbose_name="Observación")),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "evaluation",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="item_scores",
+                        to="evaluations.evaluation",
+                        verbose_name="Evaluación",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Puntaje por ítem',
-                'verbose_name_plural': 'Puntajes por ítem',
-                'ordering': ['rubric_item__order', 'rubric_item__id'],
+                "verbose_name": "Puntaje por ítem",
+                "verbose_name_plural": "Puntajes por ítem",
+                "ordering": ["rubric_item__order", "rubric_item__id"],
             },
         ),
     ]

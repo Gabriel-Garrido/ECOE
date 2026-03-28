@@ -11,51 +11,86 @@ class Migration(migrations.Migration):
 
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('exams', '0001_initial'),
+        ("exams", "0001_initial"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='stationassignment',
-            name='evaluator',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='assignments', to=settings.AUTH_USER_MODEL, verbose_name='Evaluador'),
+            model_name="stationassignment",
+            name="evaluator",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="assignments",
+                to=settings.AUTH_USER_MODEL,
+                verbose_name="Evaluador",
+            ),
         ),
         migrations.AddField(
-            model_name='stationassignment',
-            name='exam',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='assignments', to='exams.exam', verbose_name='ECOE'),
+            model_name="stationassignment",
+            name="exam",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="assignments",
+                to="exams.exam",
+                verbose_name="ECOE",
+            ),
         ),
         migrations.AddField(
-            model_name='stationassignment',
-            name='station',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='assignments', to='exams.station', verbose_name='Estación'),
+            model_name="stationassignment",
+            name="station",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="assignments",
+                to="exams.station",
+                verbose_name="Estación",
+            ),
         ),
         migrations.AddField(
-            model_name='station',
-            name='exam',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='stations', to='exams.exam', verbose_name='ECOE'),
+            model_name="station",
+            name="exam",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="stations",
+                to="exams.exam",
+                verbose_name="ECOE",
+            ),
         ),
         migrations.AddField(
-            model_name='rubricitem',
-            name='station',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='rubric_items', to='exams.station', verbose_name='Estación'),
+            model_name="rubricitem",
+            name="station",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="rubric_items",
+                to="exams.station",
+                verbose_name="Estación",
+            ),
         ),
         migrations.AddField(
-            model_name='gradescalepoint',
-            name='station',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='grade_scale', to='exams.station', verbose_name='Estación'),
+            model_name="gradescalepoint",
+            name="station",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="grade_scale",
+                to="exams.station",
+                verbose_name="Estación",
+            ),
         ),
         migrations.AddField(
-            model_name='exam',
-            name='created_by',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='created_exams', to=settings.AUTH_USER_MODEL, verbose_name='Creado por'),
+            model_name="exam",
+            name="created_by",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.PROTECT,
+                related_name="created_exams",
+                to=settings.AUTH_USER_MODEL,
+                verbose_name="Creado por",
+            ),
         ),
         migrations.AlterUniqueTogether(
-            name='stationassignment',
-            unique_together={('exam', 'station', 'evaluator')},
+            name="stationassignment",
+            unique_together={("exam", "station", "evaluator")},
         ),
         migrations.AlterUniqueTogether(
-            name='gradescalepoint',
-            unique_together={('station', 'raw_points')},
+            name="gradescalepoint",
+            unique_together={("station", "raw_points")},
         ),
     ]

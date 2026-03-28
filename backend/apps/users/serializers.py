@@ -5,15 +5,25 @@ from .models import User
 
 class UserSerializer(serializers.ModelSerializer):
     full_name = serializers.CharField(read_only=True)
+    role_display = serializers.CharField(source="get_role_display", read_only=True)
 
     class Meta:
         model = User
-        fields = ["id", "email", "first_name", "last_name", "full_name", "role", "is_active"]
+        fields = [
+            "id",
+            "email",
+            "first_name",
+            "last_name",
+            "full_name",
+            "role",
+            "role_display",
+            "is_active",
+        ]
         read_only_fields = ["id"]
 
 
 class UserCreateSerializer(serializers.ModelSerializer):
-    """Admin creates a new evaluator user."""
+    """Admin creates a new user."""
 
     password = serializers.CharField(write_only=True, min_length=6)
 
@@ -38,8 +48,18 @@ class UserUpdateSerializer(serializers.ModelSerializer):
 
 class MyProfileSerializer(serializers.ModelSerializer):
     full_name = serializers.CharField(read_only=True)
+    role_display = serializers.CharField(source="get_role_display", read_only=True)
 
     class Meta:
         model = User
-        fields = ["id", "email", "first_name", "last_name", "full_name", "role", "is_active"]
+        fields = [
+            "id",
+            "email",
+            "first_name",
+            "last_name",
+            "full_name",
+            "role",
+            "role_display",
+            "is_active",
+        ]
         read_only_fields = fields

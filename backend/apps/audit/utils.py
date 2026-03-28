@@ -1,4 +1,5 @@
 """Utility to log audit events."""
+
 from typing import Any
 
 from .models import AuditLog

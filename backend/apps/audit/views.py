@@ -11,9 +11,7 @@ from .serializers import AuditLogSerializer
 class IsAdmin(permissions.BasePermission):
     def has_permission(self, request, view):
         return bool(
-            request.user
-            and request.user.is_authenticated
-            and request.user.role == User.Role.ADMIN
+            request.user and request.user.is_authenticated and request.user.role == User.Role.ADMIN
         )
 
 
@@ -26,9 +24,7 @@ class ExamAuditLogListView(generics.ListAPIView):
         from django.db.models import Q
         from apps.evaluations.models import Evaluation
 
-        eval_ids = list(
-            Evaluation.objects.filter(exam=exam).values_list("id", flat=True)
-        )
+        eval_ids = list(Evaluation.objects.filter(exam=exam).values_list("id", flat=True))
 
         return AuditLog.objects.filter(
             Q(entity_type="Exam", entity_id=exam.id)

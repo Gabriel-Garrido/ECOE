@@ -1,43 +1,51 @@
-import React, { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
-import { getExamResults } from '../../../api/evaluations'
-import { downloadResultsXlsx, downloadEvaluationPdf } from '../../../api/exports'
-import type { Exam } from '../../../types'
-import { ApprovedBadge } from '../../../components/ui/Badge'
-import Button from '../../../components/ui/Button'
-import Spinner from '../../../components/ui/Spinner'
+import React, { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { getExamResults } from "../../../api/evaluations";
+import { downloadResultsXlsx } from "../../../api/exports";
+import type { Exam } from "../../../types";
+import { ApprovedBadge } from "../../../components/ui/Badge";
+import Button from "../../../components/ui/Button";
+import Spinner from "../../../components/ui/Spinner";
+import EmptyState, { ChartIcon } from "../../../components/ui/EmptyState";
+import { useToast } from "../../../context/ToastContext";
 
 interface Props {
-  exam: Exam
+  exam: Exam;
 }
 
 export default function ResultsTab({ exam }: Props) {
-  const [downloading, setDownloading] = useState(false)
-  const [pdfLoading, setPdfLoading] = useState<number | null>(null)
+  const { toast } = useToast();
+  const [downloading, setDownloading] = useState(false);
 
-  const { data: results, isLoading, refetch } = useQuery({
-    queryKey: ['exam-results', exam.id],
+  const {
+    data: results,
+    isLoading,
+    refetch,
+  } = useQuery({
+    queryKey: ["exam-results", exam.id],
     queryFn: () => getExamResults(exam.id),
-    enabled: exam.status !== 'DRAFT',
-  })
+    enabled: exam.status !== "DRAFT",
+  });
 
   const handleDownloadXlsx = async () => {
-    setDownloading(true)
+    setDownloading(true);
     try {
-      await downloadResultsXlsx(exam.id, exam.name)
+      await downloadResultsXlsx(exam.id, exam.name);
     } catch {
-      alert('Error al descargar el archivo Excel.')
+      toast.error("Error al descargar el archivo Excel.");
     } finally {
-      setDownloading(false)
+      setDownloading(false);
     }
-  }
+  };
 
-  if (exam.status === 'DRAFT') {
+  if (exam.status === "DRAFT") {
     return (
-      <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
-        <p className="text-gray-500">Publica el ECOE para ver resultados.</p>
-      </div>
-    )
+      <EmptyState
+        icon={ChartIcon}
+        title="Resultados no disponibles"
+        description="Publica la evaluación para ver resultados"
+      />
+    );
   }
 
   if (isLoading)
@@ -45,28 +53,29 @@ export default function ResultsTab({ exam }: Props) {
       <div className="flex justify-center py-8">
         <Spinner />
       </div>
-    )
+    );
 
   if (!results?.students?.length) {
     return (
-      <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
-        <p className="text-gray-500">No hay resultados aún. Las evaluaciones deben estar finalizadas.</p>
-        <Button variant="secondary" size="sm" className="mt-4" onClick={() => refetch()}>
-          Actualizar
-        </Button>
-      </div>
-    )
+      <EmptyState
+        icon={ChartIcon}
+        title="No hay resultados aún"
+        description="Los resultados aparecen a medida que los evaluadores finalizan las evaluaciones"
+        action={{ label: "Actualizar", onClick: () => refetch() }}
+      />
+    );
   }
 
-  const stations = results.stations
+  const stations = results.stations;
 
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h2>Resultados del ECOE</h2>
+          <h2>Resultados</h2>
           <p className="text-sm text-gray-500 mt-0.5">
-            {results.students.length} estudiantes · {stations.length} estaciones activas
+            {results.students.length} estudiantes · {stations.length} estaciones
+            activas
           </p>
         </div>
         <div className="flex gap-2">
@@ -84,21 +93,37 @@ export default function ResultsTab({ exam }: Props) {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50 text-left">
-                <th className="px-4 py-3 font-medium text-gray-600 sticky left-0 bg-gray-50">RUT</th>
-                <th className="px-4 py-3 font-medium text-gray-600 sticky left-16 bg-gray-50 min-w-[160px]">Nombre</th>
+                <th className="px-4 py-3 font-medium text-gray-600 sticky left-0 bg-gray-50">
+                  RUT
+                </th>
+                <th className="px-4 py-3 font-medium text-gray-600 sticky left-16 bg-gray-50 min-w-[160px]">
+                  Nombre
+                </th>
                 {stations.map((s) => (
-                  <th key={s.id} className="px-4 py-3 font-medium text-gray-600 whitespace-nowrap">
+                  <th
+                    key={s.id}
+                    className="px-4 py-3 font-medium text-gray-600 whitespace-nowrap"
+                  >
                     Est. {s.order}: {s.name}
-                    <span className="text-gray-400 font-normal ml-1">({s.weight_percent}%)</span>
+                    <span className="text-gray-400 font-normal ml-1">
+                      ({s.weight_percent}%)
+                    </span>
                   </th>
                 ))}
-                <th className="px-4 py-3 font-medium text-gray-600 whitespace-nowrap">Nota Final</th>
-                <th className="px-4 py-3 font-medium text-gray-600">Resultado</th>
+                <th className="px-4 py-3 font-medium text-gray-600 whitespace-nowrap">
+                  Nota Final
+                </th>
+                <th className="px-4 py-3 font-medium text-gray-600">
+                  Resultado
+                </th>
               </tr>
             </thead>
             <tbody>
               {results.students.map((r) => (
-                <tr key={r.student.id} className="border-b border-gray-50 hover:bg-gray-50">
+                <tr
+                  key={r.student.id}
+                  className="border-b border-gray-50 hover:bg-gray-50"
+                >
                   <td className="px-4 py-3 font-mono text-gray-600 sticky left-0 bg-white">
                     {r.student.rut}
                   </td>
@@ -125,5 +150,5 @@ export default function ResultsTab({ exam }: Props) {
         </div>
       </div>
     </div>
-  )
+  );
 }

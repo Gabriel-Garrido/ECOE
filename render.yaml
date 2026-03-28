@@ -1,7 +1,7 @@
 services:
   - type: web
     name: ecoe-mvp-backend
-    env: python
+    runtime: python
     region: oregon
     plan: free
     rootDir: backend
@@ -22,17 +22,21 @@ services:
       - key: CORS_ALLOWED_ORIGINS
         value: https://ecoe-mvp-frontend.onrender.com
       - key: PYTHON_VERSION
-        value: "3.11.0"
+        value: "3.11.11"
+      - key: NODE_VERSION
+        value: "20"
 
   - type: web
     name: ecoe-mvp-frontend
     env: static
     rootDir: frontend
-    buildCommand: npm ci && npx vite build
+    buildCommand: npm ci && npm run build
     staticPublishPath: dist
     envVars:
       - key: VITE_API_URL
         value: https://ecoe-mvp-backend.onrender.com/api/v1
+      - key: NODE_VERSION
+        value: "20"
     routes:
       - type: rewrite
         source: /*

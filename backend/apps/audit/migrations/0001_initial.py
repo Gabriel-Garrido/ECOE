@@ -7,24 +7,31 @@ class Migration(migrations.Migration):
 
     initial = True
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         migrations.CreateModel(
-            name='AuditLog',
+            name="AuditLog",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('action', models.CharField(max_length=100, verbose_name='Acción')),
-                ('entity_type', models.CharField(max_length=100, verbose_name='Tipo de entidad')),
-                ('entity_id', models.BigIntegerField(blank=True, null=True, verbose_name='ID de entidad')),
-                ('payload_json', models.JSONField(blank=True, default=dict, verbose_name='Datos')),
-                ('created_at', models.DateTimeField(auto_now_add=True, verbose_name='Fecha')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("action", models.CharField(max_length=100, verbose_name="Acción")),
+                ("entity_type", models.CharField(max_length=100, verbose_name="Tipo de entidad")),
+                (
+                    "entity_id",
+                    models.BigIntegerField(blank=True, null=True, verbose_name="ID de entidad"),
+                ),
+                ("payload_json", models.JSONField(blank=True, default=dict, verbose_name="Datos")),
+                ("created_at", models.DateTimeField(auto_now_add=True, verbose_name="Fecha")),
             ],
             options={
-                'verbose_name': 'Log de auditoría',
-                'verbose_name_plural': 'Logs de auditoría',
-                'ordering': ['-created_at'],
+                "verbose_name": "Log de auditoría",
+                "verbose_name_plural": "Logs de auditoría",
+                "ordering": ["-created_at"],
             },
         ),
     ]

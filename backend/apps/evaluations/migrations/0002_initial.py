@@ -9,14 +9,19 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('exams', '0001_initial'),
-        ('evaluations', '0001_initial'),
+        ("exams", "0001_initial"),
+        ("evaluations", "0001_initial"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='evaluationitemscore',
-            name='rubric_item',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='scores', to='exams.rubricitem', verbose_name='Ítem'),
+            model_name="evaluationitemscore",
+            name="rubric_item",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="scores",
+                to="exams.rubricitem",
+                verbose_name="Ítem",
+            ),
         ),
     ]

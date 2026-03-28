@@ -2,7 +2,6 @@ from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework_simplejwt.views import TokenRefreshView
 
 from .models import User
 from .serializers import (
@@ -16,9 +15,7 @@ from .serializers import (
 class IsAdmin(permissions.BasePermission):
     def has_permission(self, request, view):
         return bool(
-            request.user
-            and request.user.is_authenticated
-            and request.user.role == User.Role.ADMIN
+            request.user and request.user.is_authenticated and request.user.role == User.Role.ADMIN
         )
 
 
@@ -37,9 +34,7 @@ class AuthLoginView(APIView):
                 {"detail": "Credenciales inválidas."}, status=status.HTTP_401_UNAUTHORIZED
             )
         if not user.is_active:
-            return Response(
-                {"detail": "Usuario inactivo."}, status=status.HTTP_403_FORBIDDEN
-            )
+            return Response({"detail": "Usuario inactivo."}, status=status.HTTP_403_FORBIDDEN)
 
         refresh = RefreshToken.for_user(user)
         return Response(

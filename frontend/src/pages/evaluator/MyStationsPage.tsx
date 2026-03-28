@@ -1,29 +1,32 @@
-import React from 'react'
-import { Link } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
-import { getExams } from '../../api/exams'
-import { getStations } from '../../api/stations'
-import { useAuth } from '../../context/AuthContext'
-import { ExamStatusBadge } from '../../components/ui/Badge'
-import Spinner from '../../components/ui/Spinner'
-import type { Exam } from '../../types'
+import React from "react";
+import { Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { getExams } from "../../api/exams";
+import { getStations } from "../../api/stations";
+import { useAuth } from "../../context/AuthContext";
+import { ExamStatusBadge } from "../../components/ui/Badge";
+import Spinner from "../../components/ui/Spinner";
+import EmptyState, { ClipboardIcon } from "../../components/ui/EmptyState";
+import type { Exam } from "../../types";
 
 export default function MyStationsPage() {
-  const { user } = useAuth()
+  const { user } = useAuth();
 
   const { data: exams = [], isLoading } = useQuery({
-    queryKey: ['exams'],
+    queryKey: ["exams"],
     queryFn: () => getExams(),
-  })
+  });
 
-  const publishedExams = exams.filter((e) => e.status === 'PUBLISHED' || e.status === 'CLOSED')
+  const publishedExams = exams.filter(
+    (e) => e.status === "PUBLISHED" || e.status === "CLOSED",
+  );
 
   if (isLoading)
     return (
       <div className="flex justify-center py-12">
         <Spinner size="lg" />
       </div>
-    )
+    );
 
   return (
     <div>
@@ -35,13 +38,11 @@ export default function MyStationsPage() {
       </div>
 
       {publishedExams.length === 0 ? (
-        <div className="text-center py-16 bg-white rounded-xl border border-gray-200">
-          <div className="text-4xl mb-3">📋</div>
-          <p className="text-gray-500">No tienes ECOEs asignados actualmente.</p>
-          <p className="text-gray-400 text-sm mt-1">
-            Contacta al administrador para que te asigne estaciones.
-          </p>
-        </div>
+        <EmptyState
+          icon={ClipboardIcon}
+          title="No tienes evaluaciones asignadas"
+          description="Contacta al coordinador para que te asigne estaciones"
+        />
       ) : (
         <div className="space-y-6">
           {publishedExams.map((exam) => (
@@ -50,20 +51,20 @@ export default function MyStationsPage() {
         </div>
       )}
     </div>
-  )
+  );
 }
 
 function ExamStationsSection({ exam }: { exam: Exam }) {
   const { data: stations = [], isLoading } = useQuery({
-    queryKey: ['my-stations', exam.id],
+    queryKey: ["my-stations", exam.id],
     queryFn: () => getStations(exam.id),
-  })
+  });
 
-  const activeStations = stations.filter((s) => s.is_active)
+  const activeStations = stations.filter((s) => s.is_active);
 
-  if (isLoading) return <Spinner />
+  if (isLoading) return <Spinner />;
 
-  if (activeStations.length === 0) return null
+  if (activeStations.length === 0) return null;
 
   return (
     <div>
@@ -76,17 +77,21 @@ function ExamStationsSection({ exam }: { exam: Exam }) {
           <Link
             key={station.id}
             to={`/evaluador/exams/${exam.id}/stations/${station.id}/evaluaciones`}
-            className="block bg-white rounded-xl border border-gray-200 p-5 hover:border-primary-400 hover:shadow-md transition-all group"
+            className="block bg-white rounded-xl border border-gray-200 p-5 hover:border-brand-teal/40 hover:shadow-md transition-all group"
           >
             <div className="flex items-start justify-between">
-              <div className="h-10 w-10 bg-primary-100 rounded-lg flex items-center justify-center text-primary-700 font-bold text-lg group-hover:bg-primary-200 transition-colors">
+              <div className="h-10 w-10 bg-brand-teal-light rounded-lg flex items-center justify-center text-brand-teal font-bold text-lg group-hover:bg-brand-teal/20 transition-colors">
                 {station.order}
               </div>
-              <span className="text-primary-600 text-sm font-medium">{station.weight_percent}%</span>
+              <span className="text-brand-teal text-sm font-medium">
+                {station.weight_percent}%
+              </span>
             </div>
             <h3 className="mt-3 text-gray-900">{station.name}</h3>
             {station.educator_name && (
-              <p className="text-gray-500 text-xs mt-1">{station.educator_name}</p>
+              <p className="text-gray-500 text-xs mt-1">
+                {station.educator_name}
+              </p>
             )}
             <div className="flex items-center gap-3 mt-3 text-xs text-gray-500">
               <span>{station.rubric_items_count} ítems</span>
@@ -97,5 +102,5 @@ function ExamStationsSection({ exam }: { exam: Exam }) {
         ))}
       </div>
     </div>
-  )
+  );
 }

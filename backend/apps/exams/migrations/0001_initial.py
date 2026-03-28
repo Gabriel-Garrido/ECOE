@@ -8,83 +8,145 @@ class Migration(migrations.Migration):
 
     initial = True
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         migrations.CreateModel(
-            name='Exam',
+            name="Exam",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=200, verbose_name='Nombre')),
-                ('description', models.TextField(blank=True, verbose_name='Descripción')),
-                ('start_date', models.DateField(blank=True, null=True, verbose_name='Fecha inicio')),
-                ('status', models.CharField(choices=[('DRAFT', 'Borrador'), ('PUBLISHED', 'Publicado'), ('CLOSED', 'Cerrado')], default='DRAFT', max_length=20, verbose_name='Estado')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("name", models.CharField(max_length=200, verbose_name="Nombre")),
+                ("description", models.TextField(blank=True, verbose_name="Descripción")),
+                (
+                    "start_date",
+                    models.DateField(blank=True, null=True, verbose_name="Fecha inicio"),
+                ),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[
+                            ("DRAFT", "Borrador"),
+                            ("PUBLISHED", "Publicado"),
+                            ("CLOSED", "Cerrado"),
+                        ],
+                        default="DRAFT",
+                        max_length=20,
+                        verbose_name="Estado",
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
             ],
             options={
-                'verbose_name': 'ECOE',
-                'verbose_name_plural': 'ECOEs',
-                'ordering': ['-created_at'],
+                "verbose_name": "ECOE",
+                "verbose_name_plural": "ECOEs",
+                "ordering": ["-created_at"],
             },
         ),
         migrations.CreateModel(
-            name='GradeScalePoint',
+            name="GradeScalePoint",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('raw_points', models.DecimalField(decimal_places=2, max_digits=7, verbose_name='Puntaje bruto')),
-                ('grade', models.DecimalField(decimal_places=4, max_digits=5, verbose_name='Nota')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                (
+                    "raw_points",
+                    models.DecimalField(
+                        decimal_places=2, max_digits=7, verbose_name="Puntaje bruto"
+                    ),
+                ),
+                ("grade", models.DecimalField(decimal_places=4, max_digits=5, verbose_name="Nota")),
             ],
             options={
-                'verbose_name': 'Punto de escala',
-                'verbose_name_plural': 'Puntos de escala',
-                'ordering': ['raw_points'],
+                "verbose_name": "Punto de escala",
+                "verbose_name_plural": "Puntos de escala",
+                "ordering": ["raw_points"],
             },
         ),
         migrations.CreateModel(
-            name='RubricItem',
+            name="RubricItem",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('order', models.PositiveIntegerField(default=0, verbose_name='Orden')),
-                ('description', models.TextField(verbose_name='Descripción')),
-                ('max_points', models.DecimalField(decimal_places=2, max_digits=7, verbose_name='Puntaje máximo')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("order", models.PositiveIntegerField(default=0, verbose_name="Orden")),
+                ("description", models.TextField(verbose_name="Descripción")),
+                (
+                    "max_points",
+                    models.DecimalField(
+                        decimal_places=2, max_digits=7, verbose_name="Puntaje máximo"
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
             ],
             options={
-                'verbose_name': 'Ítem de pauta',
-                'verbose_name_plural': 'Ítems de pauta',
-                'ordering': ['order', 'id'],
+                "verbose_name": "Ítem de pauta",
+                "verbose_name_plural": "Ítems de pauta",
+                "ordering": ["order", "id"],
             },
         ),
         migrations.CreateModel(
-            name='Station',
+            name="Station",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=200, verbose_name='Nombre')),
-                ('educator_name', models.CharField(blank=True, max_length=200, verbose_name='Nombre del educador')),
-                ('weight_percent', models.DecimalField(decimal_places=2, default=Decimal('0'), max_digits=5, verbose_name='Ponderación (%)')),
-                ('is_active', models.BooleanField(default=True, verbose_name='Activa')),
-                ('order', models.PositiveIntegerField(default=0, verbose_name='Orden')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("name", models.CharField(max_length=200, verbose_name="Nombre")),
+                (
+                    "educator_name",
+                    models.CharField(
+                        blank=True, max_length=200, verbose_name="Nombre del educador"
+                    ),
+                ),
+                (
+                    "weight_percent",
+                    models.DecimalField(
+                        decimal_places=2,
+                        default=Decimal("0"),
+                        max_digits=5,
+                        verbose_name="Ponderación (%)",
+                    ),
+                ),
+                ("is_active", models.BooleanField(default=True, verbose_name="Activa")),
+                ("order", models.PositiveIntegerField(default=0, verbose_name="Orden")),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
             ],
             options={
-                'verbose_name': 'Estación',
-                'verbose_name_plural': 'Estaciones',
-                'ordering': ['order', 'id'],
+                "verbose_name": "Estación",
+                "verbose_name_plural": "Estaciones",
+                "ordering": ["order", "id"],
             },
         ),
         migrations.CreateModel(
-            name='StationAssignment',
+            name="StationAssignment",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
             ],
             options={
-                'verbose_name': 'Asignación',
-                'verbose_name_plural': 'Asignaciones',
+                "verbose_name": "Asignación",
+                "verbose_name_plural": "Asignaciones",
             },
         ),
     ]

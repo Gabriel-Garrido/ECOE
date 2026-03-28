@@ -10,11 +10,18 @@ from apps.exams.models import Exam
 from apps.users.models import User
 
 from .models import ExamStudent, Student
-from .serializers import ExamStudentSerializer, StudentManualCreateSerializer, StudentSerializer
+from .serializers import ExamStudentSerializer, StudentSerializer
 
 # Flexible XLSX header detection
 RUT_KEYS = {"rut", "run", "r.u.t", "r.u.n"}
-NAME_KEYS = {"nombre", "full_name", "nombre completo", "apellido y nombre", "nombre y apellido", "nombres"}
+NAME_KEYS = {
+    "nombre",
+    "full_name",
+    "nombre completo",
+    "apellido y nombre",
+    "nombre y apellido",
+    "nombres",
+}
 EMAIL_KEYS = {"correo", "email", "e-mail", "correo electronico", "correo electrónico", "mail"}
 
 
@@ -46,9 +53,7 @@ class ExamStudentListCreateView(APIView):
 
         exam = get_object_or_404(Exam, pk=exam_id)
         if exam.status == "CLOSED":
-            return Response(
-                {"detail": "ECOE cerrado."}, status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({"detail": "Evaluación cerrada."}, status=status.HTTP_400_BAD_REQUEST)
 
         rut = request.data.get("rut", "").strip()
         if not rut:
@@ -78,9 +83,7 @@ class ImportXLSXView(APIView):
 
         exam = get_object_or_404(Exam, pk=exam_id)
         if exam.status == "CLOSED":
-            return Response(
-                {"detail": "ECOE cerrado."}, status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({"detail": "Evaluación cerrada."}, status=status.HTTP_400_BAD_REQUEST)
 
         file = request.FILES.get("file")
         if not file:

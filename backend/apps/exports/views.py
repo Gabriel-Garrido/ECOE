@@ -1,6 +1,7 @@
 """
 Export views: XLSX results and PDF evaluation reports.
 """
+
 import io
 import re
 from decimal import ROUND_HALF_UP, Decimal
@@ -19,7 +20,7 @@ from apps.users.models import User
 
 def _safe_filename(value: str) -> str:
     """Strip characters that could break Content-Disposition headers."""
-    return re.sub(r'[^\w\-.]', '_', value)
+    return re.sub(r"[^\w\-.]", "_", value)
 
 
 class ExamResultsXlsxView(APIView):
@@ -39,9 +40,7 @@ class ExamResultsXlsxView(APIView):
             if not StationAssignment.objects.filter(exam=exam, evaluator=request.user).exists():
                 return HttpResponse(status=403)
 
-        active_stations = list(
-            exam.stations.filter(is_active=True).order_by("order", "id")
-        )
+        active_stations = list(exam.stations.filter(is_active=True).order_by("order", "id"))
         results = calculate_final_grade(exam)
 
         wb = openpyxl.Workbook()
@@ -56,9 +55,7 @@ class ExamResultsXlsxView(APIView):
         center = Alignment(horizontal="center", vertical="center")
 
         base_headers = ["RUT", "Nombre", "Correo"]
-        station_headers = [
-            f"Nota Estación {s.order} - {s.name}" for s in active_stations
-        ]
+        station_headers = [f"Nota Estación {s.order} - {s.name}" for s in active_stations]
         all_headers = base_headers + station_headers + ["Nota Final", "Aprobado"]
 
         for col_idx, header in enumerate(all_headers, start=1):
@@ -115,7 +112,11 @@ class ExamResultsXlsxView(APIView):
         ws_meta.column_dimensions["B"].width = 40
 
         meta_rows = [
-            ("ECOE", exam.name),
+            ("Evaluación", exam.name),
+            (
+                "Tipo",
+                exam.get_exam_type_display() if hasattr(exam, "get_exam_type_display") else "ECOE",
+            ),
             ("Descripción", exam.description),
             ("Estado", exam.get_status_display()),
             (
@@ -133,7 +134,7 @@ class ExamResultsXlsxView(APIView):
             ws_meta.append(
                 [
                     f"Estación {station.order}: {station.name}",
-                    f"{station.weight_percent}%",
+                    f"{station.weight_percent}% (exigencia: {station.passing_score_percent}%)",
                 ]
             )
 
@@ -142,7 +143,7 @@ class ExamResultsXlsxView(APIView):
         wb.save(buffer)
         buffer.seek(0)
 
-        filename = f"resultados_ecoe_{exam.id}_{timezone.now().strftime('%Y%m%d')}.xlsx"
+        filename = f"resultados_{exam.id}_{timezone.now().strftime('%Y%m%d')}.xlsx"
         response = HttpResponse(
             buffer.read(),
             content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -179,14 +180,16 @@ class EvaluationPdfView(APIView):
 
         # Permission check
         from apps.users.models import User
+
         if request.user.role == User.Role.EVALUATOR:
-            if evaluation.evaluator != request.user and not StationAssignment.objects.filter(
-                exam=evaluation.exam,
-                station=evaluation.station,
-                evaluator=request.user,
-            ).exists():
-                from rest_framework.response import Response
-                from rest_framework import status as drf_status
+            if (
+                evaluation.evaluator != request.user
+                and not StationAssignment.objects.filter(
+                    exam=evaluation.exam,
+                    station=evaluation.station,
+                    evaluator=request.user,
+                ).exists()
+            ):
                 return HttpResponse(status=403)
 
         buffer = io.BytesIO()
@@ -208,12 +211,6 @@ class EvaluationPdfView(APIView):
             spaceAfter=4,
             textColor=colors.HexColor("#1E3A8A"),
         )
-        subtitle_style = ParagraphStyle(
-            "Subtitle",
-            parent=styles["Normal"],
-            fontSize=10,
-            spaceAfter=2,
-        )
         small_style = ParagraphStyle(
             "Small",
             parent=styles["Normal"],
@@ -226,7 +223,12 @@ class EvaluationPdfView(APIView):
         story = []
 
         # ── Header ────────────────────────────────────────────────────────
-        story.append(Paragraph("Pauta de Evaluación ECOE", title_style))
+        exam_type_label = (
+            evaluation.exam.get_exam_type_display()
+            if hasattr(evaluation.exam, "get_exam_type_display")
+            else "ECOE"
+        )
+        story.append(Paragraph(f"Pauta de Evaluación – {exam_type_label}", title_style))
         story.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor("#1E3A8A")))
         story.append(Spacer(1, 0.3 * cm))
 
@@ -237,10 +239,15 @@ class EvaluationPdfView(APIView):
         )
 
         header_data = [
-            ["ECOE:", evaluation.exam.name, "Fecha:", finalized_str],
+            ["Evaluación:", evaluation.exam.name, "Fecha:", finalized_str],
             ["Estación:", evaluation.station.name, "Estado:", evaluation.get_status_display()],
             ["Estudiante:", evaluation.student.full_name, "RUT:", evaluation.student.rut],
-            ["Evaluador:", evaluation.evaluator.full_name, "Ponderación:", f"{evaluation.station.weight_percent}%"],
+            [
+                "Educador:",
+                evaluation.evaluator.full_name,
+                "Ponderación:",
+                f"{evaluation.station.weight_percent}%",
+            ],
         ]
         header_table = Table(header_data, colWidths=[3 * cm, 7 * cm, 3 * cm, 4 * cm])
         header_table.setStyle(
@@ -260,10 +267,18 @@ class EvaluationPdfView(APIView):
         story.append(Spacer(1, 0.5 * cm))
 
         # ── Rubric Table ───────────────────────────────────────────────────
-        story.append(Paragraph("Detalle de Ítems Evaluados", ParagraphStyle(
-            "SectionTitle", parent=styles["Heading2"], fontSize=11,
-            textColor=colors.HexColor("#1E3A8A"), spaceAfter=4,
-        )))
+        story.append(
+            Paragraph(
+                "Detalle de Ítems Evaluados",
+                ParagraphStyle(
+                    "SectionTitle",
+                    parent=styles["Heading2"],
+                    fontSize=11,
+                    textColor=colors.HexColor("#1E3A8A"),
+                    spaceAfter=4,
+                ),
+            )
+        )
 
         table_data = [["N°", "Descripción del Ítem", "Pts. Máx.", "Pts. Obtenidos", "Observación"]]
         item_scores = sorted(
@@ -283,7 +298,10 @@ class EvaluationPdfView(APIView):
             table_data.append(
                 [
                     str(idx),
-                    Paragraph(score.rubric_item.description, ParagraphStyle("Cell", fontSize=8, leading=10)),
+                    Paragraph(
+                        score.rubric_item.description,
+                        ParagraphStyle("Cell", fontSize=8, leading=10),
+                    ),
                     max_str,
                     points_str,
                     Paragraph(score.comment or "", ParagraphStyle("Cell", fontSize=8, leading=10)),
@@ -310,7 +328,12 @@ class EvaluationPdfView(APIView):
                     ("ALIGN", (0, 1), (0, -1), "CENTER"),
                     ("ALIGN", (2, 1), (3, -1), "CENTER"),
                     ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-                    ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#F0F4FF")]),
+                    (
+                        "ROWBACKGROUNDS",
+                        (0, 1),
+                        (-1, -1),
+                        [colors.white, colors.HexColor("#F0F4FF")],
+                    ),
                     ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
                     ("TOPPADDING", (0, 0), (-1, -1), 4),
                     ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
@@ -336,7 +359,8 @@ class EvaluationPdfView(APIView):
             approved = evaluation.grade >= Decimal("4.0")
         approved_str = "APROBADO" if approved else ("REPROBADO" if approved is False else "-")
         approved_color = (
-            colors.HexColor("#16A34A") if approved
+            colors.HexColor("#16A34A")
+            if approved
             else (colors.HexColor("#DC2626") if approved is False else colors.grey)
         )
 
@@ -368,10 +392,18 @@ class EvaluationPdfView(APIView):
         story.append(Spacer(1, 0.5 * cm))
 
         # ── General Comment ────────────────────────────────────────────────
-        story.append(Paragraph("Observación General", ParagraphStyle(
-            "SectionTitle", parent=styles["Heading2"], fontSize=11,
-            textColor=colors.HexColor("#1E3A8A"), spaceAfter=4,
-        )))
+        story.append(
+            Paragraph(
+                "Observación General",
+                ParagraphStyle(
+                    "SectionTitle",
+                    parent=styles["Heading2"],
+                    fontSize=11,
+                    textColor=colors.HexColor("#1E3A8A"),
+                    spaceAfter=4,
+                ),
+            )
+        )
 
         comment_text = evaluation.general_comment or "(Sin observación general)"
         comment_box = Table(
@@ -400,7 +432,7 @@ class EvaluationPdfView(APIView):
                 "_" * 35 + "",
             ],
             [
-                "Firma Evaluador",
+                "Firma Educador",
                 "",
                 "Fecha",
             ],
@@ -428,7 +460,7 @@ class EvaluationPdfView(APIView):
         story.append(Spacer(1, 0.5 * cm))
         story.append(
             Paragraph(
-                f"Documento generado el {timezone.now().strftime('%d/%m/%Y %H:%M')} · ECOE MVP",
+                f"Documento generado el {timezone.now().strftime('%d/%m/%Y %H:%M')} · Quismart",
                 small_style,
             )
         )

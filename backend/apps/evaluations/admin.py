@@ -12,7 +12,15 @@ class EvaluationItemScoreInline(admin.TabularInline):
 
 @admin.register(Evaluation)
 class EvaluationAdmin(admin.ModelAdmin):
-    list_display = ["student", "station", "evaluator", "status", "total_points", "grade", "finalized_at"]
+    list_display = [
+        "student",
+        "station",
+        "evaluator",
+        "status",
+        "total_points",
+        "grade",
+        "finalized_at",
+    ]
     list_filter = ["status", "exam", "station"]
     search_fields = ["student__full_name", "student__rut"]
     inlines = [EvaluationItemScoreInline]

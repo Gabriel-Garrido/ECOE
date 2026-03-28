@@ -4,19 +4,19 @@
 
 @layer base {
   body {
-    @apply bg-gray-50 text-gray-900 font-sans;
+    @apply bg-gray-50 text-neutral-gray-dark font-sans antialiased;
   }
 
   h1 {
-    @apply text-2xl font-bold text-gray-900;
+    @apply text-2xl font-bold text-neutral-dark;
   }
 
   h2 {
-    @apply text-xl font-semibold text-gray-800;
+    @apply text-xl font-semibold text-neutral-dark;
   }
 
   h3 {
-    @apply text-lg font-semibold text-gray-700;
+    @apply text-lg font-semibold text-neutral-gray-dark;
   }
 }
 
@@ -30,26 +30,28 @@
   }
 
   .btn-primary {
-    @apply btn bg-primary-700 hover:bg-primary-800 text-white focus:ring-primary-500 px-4 py-2 text-sm;
+    @apply btn bg-brand-teal hover:bg-brand-teal-dark text-white focus:ring-brand-teal/50 px-4 py-2 text-sm;
   }
 
   .btn-secondary {
-    @apply btn bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 focus:ring-primary-500 px-4 py-2 text-sm;
+    @apply btn bg-white hover:bg-gray-50 text-neutral-gray-dark border border-gray-300 focus:ring-brand-teal/30 px-4 py-2 text-sm;
   }
 
   .btn-danger {
-    @apply btn bg-red-600 hover:bg-red-700 text-white focus:ring-red-500 px-4 py-2 text-sm;
+    @apply btn bg-brand-red hover:bg-brand-red-dark text-white focus:ring-brand-red/50 px-4 py-2 text-sm;
   }
 
   .input {
-    @apply block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500;
+    @apply block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm
+      focus:border-brand-teal focus:outline-none focus:ring-1 focus:ring-brand-teal
+      placeholder:text-neutral-gray;
   }
 
   .label {
-    @apply block text-sm font-medium text-gray-700 mb-1;
+    @apply block text-sm font-medium text-neutral-gray-dark mb-1;
   }
 
   .error-text {
-    @apply text-xs text-red-600 mt-1;
+    @apply text-xs text-brand-red mt-1;
   }
 }

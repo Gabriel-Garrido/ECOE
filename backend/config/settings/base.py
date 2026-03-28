@@ -1,8 +1,8 @@
 """
 Django base settings for ecoe-mvp project.
 """
+
 from datetime import timedelta
-from decimal import Decimal
 from pathlib import Path
 
 from decouple import config
@@ -45,7 +45,6 @@ INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
-    "whitenoise.middleware.WhiteNoiseMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -74,6 +73,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "config.wsgi.application"
+
 
 # Database
 def _build_db_config():
@@ -180,9 +180,13 @@ SIMPLE_JWT = {
 
 # drf-spectacular
 SPECTACULAR_SETTINGS = {
-    "TITLE": "ECOE MVP API",
-    "DESCRIPTION": "API para gestión de exámenes ECOE/OSCE",
-    "VERSION": "1.0.0",
+    "TITLE": "Quismart Clinical Assessment API",
+    "DESCRIPTION": (
+        "API para gestion de evaluaciones clinicas: ECOE/OSCE, ABP y escenarios simulados. "
+        "Soporta multiples tipos de evaluacion, variantes de estacion, "
+        "importacion de pautas desde Excel y porcentaje de exigencia configurable."
+    ),
+    "VERSION": "2.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
     "COMPONENT_SPLIT_REQUEST": True,
 }

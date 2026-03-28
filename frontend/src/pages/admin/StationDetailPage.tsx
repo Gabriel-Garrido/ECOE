@@ -1,63 +1,90 @@
-import React, { useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import React, { useState, useEffect, useRef } from "react";
+import { useParams } from "react-router-dom";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   getRubricItems,
   createRubricItem,
-  updateRubricItem,
   deleteRubricItem,
   getGradeScale,
   updateGradeScale,
   generateGradeScale,
-} from '../../api/stations'
-import { getStations } from '../../api/stations'
-import type { GradeScalePoint, RubricItem } from '../../types'
-import Button from '../../components/ui/Button'
-import Input from '../../components/ui/Input'
-import Modal from '../../components/ui/Modal'
-import Spinner from '../../components/ui/Spinner'
+  importRubricXlsx,
+} from "../../api/stations";
+import { getStations } from "../../api/stations";
+import { getExam } from "../../api/exams";
+import type { GradeScalePoint, ImportXlsxResult } from "../../types";
+import Button from "../../components/ui/Button";
+import Input from "../../components/ui/Input";
+import Modal from "../../components/ui/Modal";
+import Spinner from "../../components/ui/Spinner";
+import Breadcrumb from "../../components/ui/Breadcrumb";
+import EmptyState from "../../components/ui/EmptyState";
+import { useToast } from "../../context/ToastContext";
 
 export default function StationDetailPage() {
-  const { examId, stationId } = useParams<{ examId: string; stationId: string }>()
-  const examIdNum = Number(examId)
-  const stationIdNum = Number(stationId)
-  const qc = useQueryClient()
+  const { examId, stationId } = useParams<{
+    examId: string;
+    stationId: string;
+  }>();
+  const examIdNum = Number(examId);
+  const stationIdNum = Number(stationId);
+  const qc = useQueryClient();
+  const { toast } = useToast();
 
-  const [addItemOpen, setAddItemOpen] = useState(false)
-  const [generateOpen, setGenerateOpen] = useState(false)
-  const [editingScaleRow, setEditingScaleRow] = useState<number | null>(null)
-  const [scaleRows, setScaleRows] = useState<GradeScalePoint[]>([])
-  const [newItemForm, setNewItemForm] = useState({ description: '', max_points: '' })
+  const [addItemOpen, setAddItemOpen] = useState(false);
+  const [generateOpen, setGenerateOpen] = useState(false);
+  const [scaleRows, setScaleRows] = useState<GradeScalePoint[]>([]);
+  const [scaleDirty, setScaleDirty] = useState(false);
+  const [scaleSaveStatus, setScaleSaveStatus] = useState<
+    "idle" | "saved" | "error"
+  >("idle");
+  const [newItemForm, setNewItemForm] = useState({
+    description: "",
+    max_points: "",
+  });
   const [genParams, setGenParams] = useState({
-    min_raw: '0',
-    max_raw: '',
-    min_grade: '1.0',
-    max_grade: '7.0',
-    step_raw: '1',
-  })
+    min_raw: "0",
+    max_raw: "",
+    min_grade: "1.0",
+    max_grade: "7.0",
+    step_raw: "1",
+  });
+  const [importResult, setImportResult] = useState<ImportXlsxResult | null>(
+    null,
+  );
+  const rubricFileRef = useRef<HTMLInputElement>(null);
+  const saveStatusTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { data: stations = [] } = useQuery({
-    queryKey: ['stations', examIdNum],
+    queryKey: ["stations", examIdNum],
     queryFn: () => getStations(examIdNum),
-  })
-  const station = stations.find((s) => s.id === stationIdNum)
+  });
+  const station = stations.find((s) => s.id === stationIdNum);
+
+  const { data: exam } = useQuery({
+    queryKey: ["exam", examIdNum],
+    queryFn: () => getExam(examIdNum),
+    enabled: !!examIdNum,
+  });
 
   const { data: rubricItems = [], isLoading: itemsLoading } = useQuery({
-    queryKey: ['rubric-items', stationIdNum],
+    queryKey: ["rubric-items", stationIdNum],
     queryFn: () => getRubricItems(stationIdNum),
     enabled: !!stationIdNum,
-  })
+  });
 
   const { data: gradeScale = [], isLoading: scaleLoading } = useQuery({
-    queryKey: ['grade-scale', stationIdNum],
+    queryKey: ["grade-scale", stationIdNum],
     queryFn: () => getGradeScale(stationIdNum),
     enabled: !!stationIdNum,
-    onSuccess: (data: GradeScalePoint[]) => setScaleRows(data),
-  })
+  });
 
-  React.useEffect(() => {
-    if (gradeScale.length) setScaleRows(gradeScale)
-  }, [gradeScale])
+  // Sync server data to local state only when user has not made local edits
+  useEffect(() => {
+    if (gradeScale.length && !scaleDirty) {
+      setScaleRows(gradeScale);
+    }
+  }, [gradeScale, scaleDirty]);
 
   const addItemMutation = useMutation({
     mutationFn: () =>
@@ -67,40 +94,74 @@ export default function StationDetailPage() {
         order: rubricItems.length + 1,
       }),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['rubric-items', stationIdNum] })
-      qc.invalidateQueries({ queryKey: ['stations', examIdNum] })
-      setAddItemOpen(false)
-      setNewItemForm({ description: '', max_points: '' })
+      qc.invalidateQueries({ queryKey: ["rubric-items", stationIdNum] });
+      qc.invalidateQueries({ queryKey: ["stations", examIdNum] });
+      setAddItemOpen(false);
+      setNewItemForm({ description: "", max_points: "" });
+      toast.success("Ítem agregado");
     },
     onError: (e: unknown) =>
-      alert(
-        (e as { response?: { data?: { detail?: string } } })?.response?.data?.detail ||
-          'Error al agregar ítem.'
+      toast.error(
+        (e as { response?: { data?: { detail?: string } } })?.response?.data
+          ?.detail || "Error al agregar ítem.",
       ),
-  })
+  });
 
   const deleteItemMutation = useMutation({
     mutationFn: deleteRubricItem,
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['rubric-items', stationIdNum] })
-      qc.invalidateQueries({ queryKey: ['stations', examIdNum] })
+      qc.invalidateQueries({ queryKey: ["rubric-items", stationIdNum] });
+      qc.invalidateQueries({ queryKey: ["stations", examIdNum] });
     },
     onError: (e: unknown) =>
-      alert(
-        (e as { response?: { data?: { detail?: string } } })?.response?.data?.detail ||
-          'No se puede eliminar: hay evaluaciones con este ítem.'
+      toast.error(
+        (e as { response?: { data?: { detail?: string } } })?.response?.data
+          ?.detail || "No se puede eliminar: hay evaluaciones con este ítem.",
       ),
-  })
+  });
+
+  const importRubricMutation = useMutation({
+    mutationFn: (file: File) => importRubricXlsx(stationIdNum, file),
+    onSuccess: (result: ImportXlsxResult) => {
+      setImportResult(result);
+      qc.invalidateQueries({ queryKey: ["rubric-items", stationIdNum] });
+      qc.invalidateQueries({ queryKey: ["stations", examIdNum] });
+      toast.success("Pauta importada");
+    },
+    onError: (e: unknown) =>
+      toast.error(
+        (e as { response?: { data?: { detail?: string } } })?.response?.data
+          ?.detail || "Error al importar pauta.",
+      ),
+  });
+
+  const _showSaveStatus = (status: "saved" | "error", durationMs = 3000) => {
+    setScaleSaveStatus(status);
+    if (saveStatusTimer.current) clearTimeout(saveStatusTimer.current);
+    saveStatusTimer.current = setTimeout(
+      () => setScaleSaveStatus("idle"),
+      durationMs,
+    );
+  };
 
   const saveScaleMutation = useMutation({
     mutationFn: (rows: GradeScalePoint[]) =>
       updateGradeScale(
         stationIdNum,
-        rows.map((r) => ({ raw_points: r.raw_points, grade: r.grade }))
+        rows.map((r) => ({ raw_points: r.raw_points, grade: r.grade })),
       ),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['grade-scale', stationIdNum] }),
-    onError: () => alert('Error al guardar la escala.'),
-  })
+    onSuccess: (data) => {
+      // Update local state with server response and mark clean
+      setScaleRows(data);
+      setScaleDirty(false);
+      // Update query cache directly to avoid re-fetch overwriting local state
+      qc.setQueryData(["grade-scale", stationIdNum], data);
+      _showSaveStatus("saved");
+    },
+    onError: () => {
+      _showSaveStatus("error", 4000);
+    },
+  });
 
   const generateMutation = useMutation({
     mutationFn: () =>
@@ -114,29 +175,33 @@ export default function StationDetailPage() {
         step_raw: genParams.step_raw,
       }),
     onSuccess: (data: GradeScalePoint[]) => {
-      qc.invalidateQueries({ queryKey: ['grade-scale', stationIdNum] })
-      setScaleRows(data)
-      setGenerateOpen(false)
+      qc.setQueryData(["grade-scale", stationIdNum], data);
+      setScaleRows(data);
+      setScaleDirty(false);
+      setGenerateOpen(false);
+      _showSaveStatus("saved");
     },
     onError: (e: unknown) =>
-      alert(
-        (e as { response?: { data?: { detail?: string } } })?.response?.data?.detail ||
-          'Error al generar escala.'
+      toast.error(
+        (e as { response?: { data?: { detail?: string } } })?.response?.data
+          ?.detail || "Error al generar escala.",
       ),
-  })
+  });
 
-  const maxPointsTotal = rubricItems.reduce((s, i) => s + parseFloat(i.max_points), 0)
+  const maxPointsTotal = rubricItems.reduce(
+    (s, i) => s + parseFloat(i.max_points),
+    0,
+  );
 
   return (
     <div className="max-w-4xl mx-auto">
-      {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-sm text-gray-500 mb-4">
-        <Link to="/admin/exams" className="hover:text-primary-600">ECOEs</Link>
-        <span>/</span>
-        <Link to={`/admin/exams/${examId}`} className="hover:text-primary-600">ECOE</Link>
-        <span>/</span>
-        <span className="text-gray-900">{station?.name || `Estación ${stationId}`}</span>
-      </div>
+      <Breadcrumb
+        items={[
+          { label: "Evaluaciones", to: "/admin/exams" },
+          { label: exam?.name || "Evaluación", to: `/admin/exams/${examId}` },
+          { label: station?.name || "Estación" },
+        ]}
+      />
 
       <h1 className="mb-6">{station?.name} – Pauta y Escala de Notas</h1>
 
@@ -146,20 +211,73 @@ export default function StationDetailPage() {
           <div>
             <h2>Pauta de Evaluación</h2>
             <p className="text-sm text-gray-500 mt-0.5">
-              Puntaje máximo total: <strong>{maxPointsTotal.toFixed(2)}</strong> pts
+              Puntaje máximo total: <strong>{maxPointsTotal.toFixed(2)}</strong>{" "}
+              pts
             </p>
           </div>
-          <Button size="sm" onClick={() => setAddItemOpen(true)}>
-            + Agregar ítem
-          </Button>
+          <div className="flex gap-2">
+            <input
+              ref={rubricFileRef}
+              type="file"
+              accept=".xlsx,.xls"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) importRubricMutation.mutate(file);
+                e.target.value = "";
+              }}
+            />
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => rubricFileRef.current?.click()}
+              loading={importRubricMutation.isPending}
+            >
+              Importar XLSX
+            </Button>
+            <Button size="sm" onClick={() => setAddItemOpen(true)}>
+              + Agregar ítem
+            </Button>
+          </div>
         </div>
+
+        {importResult && (
+          <div className="mb-4 p-3 rounded-lg bg-brand-teal-light border border-brand-teal/20 text-sm">
+            <div className="flex items-center justify-between">
+              <p>
+                Importación: <strong>{importResult.created}</strong> creados,{" "}
+                <strong>{importResult.updated}</strong> actualizados
+                {importResult.errors.length > 0 && (
+                  <span className="text-red-600 ml-2">
+                    ({importResult.errors.length} errores)
+                  </span>
+                )}
+              </p>
+              <button
+                onClick={() => setImportResult(null)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                ×
+              </button>
+            </div>
+            {importResult.errors.length > 0 && (
+              <ul className="mt-2 text-red-600 text-xs space-y-0.5">
+                {importResult.errors.map((err, i) => (
+                  <li key={i}>{err}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
 
         {itemsLoading ? (
           <Spinner />
         ) : rubricItems.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
-            No hay ítems. Agrega el primer ítem de evaluación.
-          </div>
+          <EmptyState
+            title="No hay ítems de evaluación"
+            description="Agrega el primer ítem o importa desde un archivo Excel"
+            action={{ label: "+ Agregar ítem", onClick: () => setAddItemOpen(true) }}
+          />
         ) : (
           <div className="space-y-2">
             {rubricItems.map((item, idx) => (
@@ -167,7 +285,9 @@ export default function StationDetailPage() {
                 key={item.id}
                 className="flex items-start gap-4 p-3 rounded-lg border border-gray-100 hover:bg-gray-50"
               >
-                <span className="text-gray-400 text-sm pt-0.5 w-6 flex-shrink-0">{idx + 1}.</span>
+                <span className="text-gray-400 text-sm pt-0.5 w-6 flex-shrink-0">
+                  {idx + 1}.
+                </span>
                 <div className="flex-1">
                   <p className="text-sm">{item.description}</p>
                 </div>
@@ -176,11 +296,17 @@ export default function StationDetailPage() {
                 </span>
                 <button
                   onClick={() => {
-                    if (confirm('¿Eliminar este ítem?')) deleteItemMutation.mutate(item.id)
+                    if (confirm("¿Eliminar este ítem?"))
+                      deleteItemMutation.mutate(item.id);
                   }}
                   className="text-gray-300 hover:text-red-500 transition-colors flex-shrink-0"
                 >
-                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg
+                    className="h-4 w-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -204,13 +330,16 @@ export default function StationDetailPage() {
               Define la conversión de puntaje bruto a nota (1.0–7.0)
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center">
             <Button
               variant="secondary"
               size="sm"
               onClick={() => {
-                setGenParams((p) => ({ ...p, max_raw: String(maxPointsTotal) }))
-                setGenerateOpen(true)
+                setGenParams((p) => ({
+                  ...p,
+                  max_raw: String(maxPointsTotal),
+                }));
+                setGenerateOpen(true);
               }}
             >
               Generar escala
@@ -220,9 +349,33 @@ export default function StationDetailPage() {
                 size="sm"
                 onClick={() => saveScaleMutation.mutate(scaleRows)}
                 loading={saveScaleMutation.isPending}
+                disabled={!scaleDirty}
               >
                 Guardar escala
               </Button>
+            )}
+            {scaleSaveStatus === "saved" && (
+              <span className="text-green-600 text-sm font-medium flex items-center gap-1">
+                <svg
+                  className="h-4 w-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+                Escala guardada
+              </span>
+            )}
+            {scaleSaveStatus === "error" && (
+              <span className="text-red-600 text-sm font-medium">
+                Error al guardar
+              </span>
             )}
           </div>
         </div>
@@ -230,15 +383,19 @@ export default function StationDetailPage() {
         {scaleLoading ? (
           <Spinner />
         ) : scaleRows.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
-            No hay escala. Genera una escala lineal o agrégala manualmente.
-          </div>
+          <EmptyState
+            title="No hay escala de notas"
+            description="Genera una escala lineal o agrégala manualmente"
+            action={{ label: "Generar escala", onClick: () => { setGenParams((p) => ({ ...p, max_raw: String(maxPointsTotal) })); setGenerateOpen(true); } }}
+          />
         ) : (
           <div className="overflow-auto max-h-80">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-100 bg-gray-50 text-left">
-                  <th className="px-3 py-2 font-medium text-gray-600">Puntaje Bruto</th>
+                  <th className="px-3 py-2 font-medium text-gray-600">
+                    Puntaje Bruto
+                  </th>
                   <th className="px-3 py-2 font-medium text-gray-600">Nota</th>
                   <th className="px-3 py-2" />
                 </tr>
@@ -252,9 +409,10 @@ export default function StationDetailPage() {
                         className="w-24 input py-1 text-sm"
                         value={row.raw_points}
                         onChange={(e) => {
-                          const newRows = [...scaleRows]
-                          newRows[idx] = { ...row, raw_points: e.target.value }
-                          setScaleRows(newRows)
+                          const newRows = [...scaleRows];
+                          newRows[idx] = { ...row, raw_points: e.target.value };
+                          setScaleRows(newRows);
+                          setScaleDirty(true);
                         }}
                       />
                     </td>
@@ -267,15 +425,19 @@ export default function StationDetailPage() {
                         className="w-20 input py-1 text-sm"
                         value={row.grade}
                         onChange={(e) => {
-                          const newRows = [...scaleRows]
-                          newRows[idx] = { ...row, grade: e.target.value }
-                          setScaleRows(newRows)
+                          const newRows = [...scaleRows];
+                          newRows[idx] = { ...row, grade: e.target.value };
+                          setScaleRows(newRows);
+                          setScaleDirty(true);
                         }}
                       />
                     </td>
                     <td className="px-3 py-1.5">
                       <button
-                        onClick={() => setScaleRows((r) => r.filter((_, i) => i !== idx))}
+                        onClick={() => {
+                          setScaleRows((r) => r.filter((_, i) => i !== idx));
+                          setScaleDirty(true);
+                        }}
                         className="text-gray-300 hover:text-red-500 transition-colors"
                       >
                         ×
@@ -292,12 +454,10 @@ export default function StationDetailPage() {
             variant="ghost"
             size="sm"
             className="mt-3"
-            onClick={() =>
-              setScaleRows((r) => [
-                ...r,
-                { id: 0, raw_points: '', grade: '' },
-              ])
-            }
+            onClick={() => {
+              setScaleRows((r) => [...r, { id: 0, raw_points: "", grade: "" }]);
+              setScaleDirty(true);
+            }}
           >
             + Agregar fila
           </Button>
@@ -305,7 +465,11 @@ export default function StationDetailPage() {
       </div>
 
       {/* Add item modal */}
-      <Modal isOpen={addItemOpen} onClose={() => setAddItemOpen(false)} title="Agregar Ítem">
+      <Modal
+        isOpen={addItemOpen}
+        onClose={() => setAddItemOpen(false)}
+        title="Agregar Ítem"
+      >
         <div className="space-y-4">
           <div>
             <label className="label">Descripción del ítem</label>
@@ -324,7 +488,9 @@ export default function StationDetailPage() {
             min="0.01"
             step="0.01"
             value={newItemForm.max_points}
-            onChange={(e) => setNewItemForm((f) => ({ ...f, max_points: e.target.value }))}
+            onChange={(e) =>
+              setNewItemForm((f) => ({ ...f, max_points: e.target.value }))
+            }
           />
           <div className="flex gap-3 justify-end pt-2">
             <Button variant="secondary" onClick={() => setAddItemOpen(false)}>
@@ -353,13 +519,17 @@ export default function StationDetailPage() {
               label="Puntaje mínimo (raw)"
               type="number"
               value={genParams.min_raw}
-              onChange={(e) => setGenParams((p) => ({ ...p, min_raw: e.target.value }))}
+              onChange={(e) =>
+                setGenParams((p) => ({ ...p, min_raw: e.target.value }))
+              }
             />
             <Input
               label="Puntaje máximo (raw)"
               type="number"
               value={genParams.max_raw}
-              onChange={(e) => setGenParams((p) => ({ ...p, max_raw: e.target.value }))}
+              onChange={(e) =>
+                setGenParams((p) => ({ ...p, max_raw: e.target.value }))
+              }
               helpText={`Total pauta: ${maxPointsTotal.toFixed(2)}`}
             />
             <Input
@@ -369,7 +539,9 @@ export default function StationDetailPage() {
               max="7"
               step="0.1"
               value={genParams.min_grade}
-              onChange={(e) => setGenParams((p) => ({ ...p, min_grade: e.target.value }))}
+              onChange={(e) =>
+                setGenParams((p) => ({ ...p, min_grade: e.target.value }))
+              }
             />
             <Input
               label="Nota máxima"
@@ -378,7 +550,9 @@ export default function StationDetailPage() {
               max="7"
               step="0.1"
               value={genParams.max_grade}
-              onChange={(e) => setGenParams((p) => ({ ...p, max_grade: e.target.value }))}
+              onChange={(e) =>
+                setGenParams((p) => ({ ...p, max_grade: e.target.value }))
+              }
             />
             <Input
               label="Paso (raw)"
@@ -386,7 +560,9 @@ export default function StationDetailPage() {
               min="0.1"
               step="0.1"
               value={genParams.step_raw}
-              onChange={(e) => setGenParams((p) => ({ ...p, step_raw: e.target.value }))}
+              onChange={(e) =>
+                setGenParams((p) => ({ ...p, step_raw: e.target.value }))
+              }
             />
           </div>
           <div className="flex gap-3 justify-end pt-2">
@@ -403,5 +579,5 @@ export default function StationDetailPage() {
         </div>
       </Modal>
     </div>
-  )
+  );
 }

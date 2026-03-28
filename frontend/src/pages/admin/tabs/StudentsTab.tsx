@@ -1,82 +1,90 @@
-import React, { useRef, useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { getExamStudents, importStudentsXlsx, addStudentToExam } from '../../../api/students'
-import type { Exam } from '../../../types'
-import Button from '../../../components/ui/Button'
-import Modal from '../../../components/ui/Modal'
-import Input from '../../../components/ui/Input'
-import Spinner from '../../../components/ui/Spinner'
+import React, { useRef, useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  getExamStudents,
+  importStudentsXlsx,
+  addStudentToExam,
+} from "../../../api/students";
+import type { Exam, ImportXlsxResult } from "../../../types";
+import Button from "../../../components/ui/Button";
+import Modal from "../../../components/ui/Modal";
+import Input from "../../../components/ui/Input";
+import Spinner from "../../../components/ui/Spinner";
+import EmptyState, { UsersIcon } from "../../../components/ui/EmptyState";
+import { useToast } from "../../../context/ToastContext";
 
 interface Props {
-  exam: Exam
+  exam: Exam;
 }
 
 export default function StudentsTab({ exam }: Props) {
-  const qc = useQueryClient()
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const [addOpen, setAddOpen] = useState(false)
-  const [importResult, setImportResult] = useState<{
-    created: number
-    updated: number
-    errors: string[]
-  } | null>(null)
+  const qc = useQueryClient();
+  const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [addOpen, setAddOpen] = useState(false);
+  const [importResult, setImportResult] = useState<ImportXlsxResult | null>(null);
 
   const { data: examStudents = [], isLoading } = useQuery({
-    queryKey: ['exam-students', exam.id],
+    queryKey: ["exam-students", exam.id],
     queryFn: () => getExamStudents(exam.id),
-  })
+  });
 
   const importMutation = useMutation({
     mutationFn: (file: File) => importStudentsXlsx(exam.id, file),
     onSuccess: (result) => {
-      qc.invalidateQueries({ queryKey: ['exam-students', exam.id] })
-      setImportResult(result)
+      qc.invalidateQueries({ queryKey: ["exam-students", exam.id] });
+      setImportResult(result);
+      toast.success("Importación completada");
     },
     onError: (e: unknown) => {
-      alert(
-        (e as { response?: { data?: { detail?: string } } })?.response?.data?.detail ||
-          'Error al importar el archivo.'
-      )
+      toast.error(
+        (e as { response?: { data?: { detail?: string } } })?.response?.data
+          ?.detail || "Error al importar el archivo.",
+      );
     },
-  })
+  });
 
-  const [addForm, setAddForm] = useState({ rut: '', full_name: '', email: '' })
+  const [addForm, setAddForm] = useState({ rut: "", full_name: "", email: "" });
   const addMutation = useMutation({
     mutationFn: () => addStudentToExam(exam.id, addForm),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['exam-students', exam.id] })
-      setAddOpen(false)
-      setAddForm({ rut: '', full_name: '', email: '' })
+      qc.invalidateQueries({ queryKey: ["exam-students", exam.id] });
+      setAddOpen(false);
+      setAddForm({ rut: "", full_name: "", email: "" });
+      toast.success("Estudiante agregado");
     },
     onError: (e: unknown) =>
-      alert(
-        (e as { response?: { data?: { detail?: string } } })?.response?.data?.detail ||
-          'Error al agregar estudiante.'
+      toast.error(
+        (e as { response?: { data?: { detail?: string } } })?.response?.data
+          ?.detail || "Error al agregar estudiante.",
       ),
-  })
+  });
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
+    const file = e.target.files?.[0];
     if (file) {
-      setImportResult(null)
-      importMutation.mutate(file)
+      setImportResult(null);
+      importMutation.mutate(file);
     }
-    e.target.value = ''
-  }
+    e.target.value = "";
+  };
 
-  const isClosed = exam.status === 'CLOSED'
+  const isClosed = exam.status === "CLOSED";
 
   if (isLoading)
     return (
       <div className="flex justify-center py-8">
         <Spinner />
       </div>
-    )
+    );
 
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
         <h2>Estudiantes ({examStudents.length})</h2>
+        <p className="text-sm text-gray-500 mt-0.5">
+          Los estudiantes serán evaluados en todas las estaciones activas
+        </p>
         {!isClosed && (
           <div className="flex gap-2">
             <input
@@ -105,7 +113,8 @@ export default function StudentsTab({ exam }: Props) {
       {importResult && (
         <div className="mb-4 bg-green-50 border border-green-200 rounded-lg p-4">
           <p className="text-green-800 font-medium text-sm">
-            Importación completada: {importResult.created} creados, {importResult.updated} actualizados.
+            Importación completada: {importResult.created} creados,{" "}
+            {importResult.updated} actualizados.
           </p>
           {importResult.errors.length > 0 && (
             <ul className="mt-2 text-red-700 text-xs space-y-0.5">
@@ -118,13 +127,12 @@ export default function StudentsTab({ exam }: Props) {
       )}
 
       {examStudents.length === 0 ? (
-        <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
-          <div className="text-3xl mb-3">👥</div>
-          <p className="text-gray-500 mb-3">No hay estudiantes inscritos.</p>
-          <p className="text-gray-400 text-sm">
-            Importa un archivo XLSX con columnas: rut, nombre, correo
-          </p>
-        </div>
+        <EmptyState
+          icon={UsersIcon}
+          title="No hay estudiantes inscritos"
+          description="Importa un archivo XLSX con columnas: rut, nombre, correo"
+          action={!isClosed ? { label: "Importar XLSX", onClick: () => fileInputRef.current?.click() } : undefined}
+        />
       ) : (
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
           <table className="w-full text-sm">
@@ -132,16 +140,25 @@ export default function StudentsTab({ exam }: Props) {
               <tr className="border-b border-gray-100 bg-gray-50 text-left">
                 <th className="px-4 py-3 font-medium text-gray-600">RUT</th>
                 <th className="px-4 py-3 font-medium text-gray-600">Nombre</th>
-                <th className="px-4 py-3 font-medium text-gray-600 hidden md:table-cell">Correo</th>
+                <th className="px-4 py-3 font-medium text-gray-600 hidden md:table-cell">
+                  Correo
+                </th>
               </tr>
             </thead>
             <tbody>
               {examStudents.map((es) => (
-                <tr key={es.id} className="border-b border-gray-50 hover:bg-gray-50">
-                  <td className="px-4 py-3 font-mono text-gray-600">{es.student.rut}</td>
-                  <td className="px-4 py-3 font-medium">{es.student.full_name}</td>
+                <tr
+                  key={es.id}
+                  className="border-b border-gray-50 hover:bg-gray-50"
+                >
+                  <td className="px-4 py-3 font-mono text-gray-600">
+                    {es.student.rut}
+                  </td>
+                  <td className="px-4 py-3 font-medium">
+                    {es.student.full_name}
+                  </td>
                   <td className="px-4 py-3 text-gray-500 hidden md:table-cell">
-                    {es.student.email || '-'}
+                    {es.student.email || "-"}
                   </td>
                 </tr>
               ))}
@@ -151,7 +168,11 @@ export default function StudentsTab({ exam }: Props) {
       )}
 
       {/* Add student modal */}
-      <Modal isOpen={addOpen} onClose={() => setAddOpen(false)} title="Agregar Estudiante">
+      <Modal
+        isOpen={addOpen}
+        onClose={() => setAddOpen(false)}
+        title="Agregar Estudiante"
+      >
         <div className="space-y-4">
           <Input
             label="RUT"
@@ -163,13 +184,17 @@ export default function StudentsTab({ exam }: Props) {
             label="Nombre completo"
             placeholder="Nombre Apellido"
             value={addForm.full_name}
-            onChange={(e) => setAddForm((f) => ({ ...f, full_name: e.target.value }))}
+            onChange={(e) =>
+              setAddForm((f) => ({ ...f, full_name: e.target.value }))
+            }
           />
           <Input
             label="Correo electrónico (opcional)"
             type="email"
             value={addForm.email}
-            onChange={(e) => setAddForm((f) => ({ ...f, email: e.target.value }))}
+            onChange={(e) =>
+              setAddForm((f) => ({ ...f, email: e.target.value }))
+            }
           />
           <div className="flex gap-3 justify-end pt-2">
             <Button variant="secondary" onClick={() => setAddOpen(false)}>
@@ -186,5 +211,5 @@ export default function StudentsTab({ exam }: Props) {
         </div>
       </Modal>
     </div>
-  )
+  );
 }
