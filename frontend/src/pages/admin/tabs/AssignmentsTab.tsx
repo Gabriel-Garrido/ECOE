@@ -12,6 +12,7 @@ import Button from "../../../components/ui/Button";
 import Modal from "../../../components/ui/Modal";
 import Spinner from "../../../components/ui/Spinner";
 import EmptyState, { LinkIcon } from "../../../components/ui/EmptyState";
+import ConfirmDialog from "../../../components/ui/ConfirmDialog";
 import { useToast } from "../../../context/ToastContext";
 
 interface Props {
@@ -23,6 +24,7 @@ export default function AssignmentsTab({ exam }: Props) {
   const { toast } = useToast();
   const [addOpen, setAddOpen] = useState(false);
   const [form, setForm] = useState({ station: "", evaluator: "" });
+  const [deleteId, setDeleteId] = useState<number | null>(null);
 
   const { data: assignments = [], isLoading } = useQuery({
     queryKey: ["assignments", exam.id],
@@ -142,10 +144,7 @@ export default function AssignmentsTab({ exam }: Props) {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => {
-                          if (confirm("¿Eliminar esta asignación?"))
-                            deleteMutation.mutate(a.id);
-                        }}
+                        onClick={() => setDeleteId(a.id)}
                       >
                         Eliminar
                       </Button>
@@ -215,6 +214,19 @@ export default function AssignmentsTab({ exam }: Props) {
           </div>
         </div>
       </Modal>
+
+      <ConfirmDialog
+        isOpen={deleteId !== null}
+        onConfirm={() => {
+          if (deleteId !== null) deleteMutation.mutate(deleteId);
+          setDeleteId(null);
+        }}
+        onCancel={() => setDeleteId(null)}
+        title="Eliminar Asignación"
+        message="¿Eliminar esta asignación de evaluador?"
+        confirmLabel="Eliminar"
+        confirmVariant="danger"
+      />
     </div>
   );
 }

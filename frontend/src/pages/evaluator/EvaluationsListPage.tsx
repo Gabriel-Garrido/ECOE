@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getExamStudents } from "../../api/students";
@@ -24,6 +24,7 @@ export default function EvaluationsListPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const qc = useQueryClient();
+  const [evaluatingStudentId, setEvaluatingStudentId] = useState<number | null>(null);
 
   const { data: exam } = useQuery({
     queryKey: ["exam", examIdNum],
@@ -54,13 +55,18 @@ export default function EvaluationsListPage() {
   );
 
   const startEvalMutation = useMutation({
-    mutationFn: (studentId: number) =>
-      getOrCreateDraftEvaluation(stationIdNum, studentId),
+    mutationFn: (studentId: number) => {
+      setEvaluatingStudentId(studentId);
+      return getOrCreateDraftEvaluation(stationIdNum, studentId);
+    },
     onSuccess: (evaluation) => {
       qc.invalidateQueries({ queryKey: ["station-evaluations", stationIdNum] });
       navigate(`/evaluador/evaluaciones/${evaluation.id}`);
     },
-    onError: () => toast.error("Error al iniciar la evaluación."),
+    onError: () => {
+      setEvaluatingStudentId(null);
+      toast.error("Error al iniciar la evaluación.");
+    },
   });
 
   const isLoading = studentsLoading || evalsLoading;
@@ -92,7 +98,7 @@ export default function EvaluationsListPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-3 gap-3 sm:gap-4 mb-6">
         {[
           {
             label: "Sin iniciar",
@@ -113,9 +119,9 @@ export default function EvaluationsListPage() {
         ].map((stat) => (
           <div
             key={stat.label}
-            className={`rounded-xl p-4 text-center ${stat.color}`}
+            className={`rounded-xl p-3 sm:p-4 text-center ${stat.color}`}
           >
-            <div className="text-2xl font-bold">{stat.count}</div>
+            <div className="text-xl sm:text-2xl font-bold">{stat.count}</div>
             <div className="text-xs mt-1">{stat.label}</div>
           </div>
         ))}
@@ -123,6 +129,7 @@ export default function EvaluationsListPage() {
 
       {/* Students list */}
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+        <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50 text-left">
@@ -168,15 +175,17 @@ export default function EvaluationsListPage() {
                   </td>
                   <td className="px-4 py-3 text-right">
                     {evaluation ? (
-                      <Link to={`/evaluador/evaluaciones/${evaluation.id}`}>
-                        <Button variant="secondary" size="sm">
-                          {status === "FINAL" ? "Ver" : "Continuar"}
-                        </Button>
+                      <Link
+                        to={`/evaluador/evaluaciones/${evaluation.id}`}
+                        className="inline-flex items-center justify-center font-medium rounded-lg transition-colors px-3 py-1.5 text-sm bg-white hover:bg-gray-50 text-neutral-gray-dark border border-gray-300"
+                      >
+                        {status === "FINAL" ? "Ver" : "Continuar"}
                       </Link>
                     ) : (
                       <Button
                         size="sm"
-                        loading={startEvalMutation.isPending}
+                        loading={evaluatingStudentId === es.student.id && startEvalMutation.isPending}
+                        disabled={startEvalMutation.isPending}
                         onClick={() => startEvalMutation.mutate(es.student.id)}
                       >
                         Evaluar
@@ -188,6 +197,7 @@ export default function EvaluationsListPage() {
             })}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );

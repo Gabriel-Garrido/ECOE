@@ -31,10 +31,13 @@ interface Props {
 }
 
 export default function Toast({ toasts, onDismiss }: Props) {
-  if (toasts.length === 0) return null;
-
   return (
-    <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none">
+    <div
+      className="fixed top-4 left-4 right-4 sm:left-auto sm:right-4 z-50 flex flex-col gap-2 max-w-sm w-auto sm:w-full pointer-events-none"
+      aria-live="polite"
+      role="region"
+      aria-label="Notificaciones"
+    >
       {toasts.map((t) => (
         <div
           key={t.id}

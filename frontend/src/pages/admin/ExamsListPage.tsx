@@ -11,6 +11,7 @@ import EmptyState, { ClipboardIcon } from "../../components/ui/EmptyState";
 import Modal from "../../components/ui/Modal";
 import Input from "../../components/ui/Input";
 import Spinner from "../../components/ui/Spinner";
+import ConfirmDialog from "../../components/ui/ConfirmDialog";
 import { useToast } from "../../context/ToastContext";
 
 const EXAM_TYPE_LABELS: Record<string, string> = {
@@ -33,6 +34,7 @@ export default function ExamsListPage() {
   const { toast } = useToast();
   const [createOpen, setCreateOpen] = useState(false);
   const [error, setError] = useState("");
+  const [confirmAction, setConfirmAction] = useState<{ type: "publish" | "close"; examId: number } | null>(null);
 
   const { data: exams = [], isLoading } = useQuery({
     queryKey: ["exams"],
@@ -124,6 +126,7 @@ export default function ExamsListPage() {
         />
       ) : (
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+          <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50">
@@ -184,19 +187,17 @@ export default function ExamsListPage() {
                   </td>
                   <td className="px-4 py-4">
                     <div className="flex items-center gap-2 justify-end">
-                      <Link to={`/admin/exams/${exam.id}`}>
-                        <Button variant="secondary" size="sm">
-                          Ver
-                        </Button>
+                      <Link
+                        to={`/admin/exams/${exam.id}`}
+                        className="inline-flex items-center justify-center font-medium rounded-lg transition-colors px-3 py-1.5 text-sm bg-white hover:bg-gray-50 text-neutral-gray-dark border border-gray-300"
+                      >
+                        Ver
                       </Link>
                       {exam.status === "DRAFT" && (
                         <Button
                           size="sm"
                           loading={publishMutation.isPending}
-                          onClick={() => {
-                            if (confirm("¿Publicar esta evaluación?"))
-                              publishMutation.mutate(exam.id);
-                          }}
+                          onClick={() => setConfirmAction({ type: "publish", examId: exam.id })}
                         >
                           Publicar
                         </Button>
@@ -205,14 +206,7 @@ export default function ExamsListPage() {
                         <Button
                           variant="danger"
                           size="sm"
-                          onClick={() => {
-                            if (
-                              confirm(
-                                "¿Cerrar esta evaluación? Esta acción es irreversible.",
-                              )
-                            )
-                              closeMutation.mutate(exam.id);
-                          }}
+                          onClick={() => setConfirmAction({ type: "close", examId: exam.id })}
                         >
                           Cerrar
                         </Button>
@@ -223,6 +217,7 @@ export default function ExamsListPage() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
 
@@ -281,6 +276,30 @@ export default function ExamsListPage() {
           </div>
         </form>
       </Modal>
+
+      <ConfirmDialog
+        isOpen={confirmAction?.type === "publish"}
+        onConfirm={() => {
+          if (confirmAction) publishMutation.mutate(confirmAction.examId);
+          setConfirmAction(null);
+        }}
+        onCancel={() => setConfirmAction(null)}
+        title="Publicar Evaluación"
+        message="¿Publicar esta evaluación? Los evaluadores podrán comenzar a evaluar."
+        confirmLabel="Publicar"
+      />
+      <ConfirmDialog
+        isOpen={confirmAction?.type === "close"}
+        onConfirm={() => {
+          if (confirmAction) closeMutation.mutate(confirmAction.examId);
+          setConfirmAction(null);
+        }}
+        onCancel={() => setConfirmAction(null)}
+        title="Cerrar Evaluación"
+        message="¿Cerrar esta evaluación? Esta acción es irreversible."
+        confirmLabel="Cerrar"
+        confirmVariant="danger"
+      />
     </div>
   );
 }

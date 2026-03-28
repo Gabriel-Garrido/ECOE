@@ -310,7 +310,7 @@ export default function EvaluateStudentPage() {
                       <input
                         type="text"
                         inputMode="decimal"
-                        className={`w-28 input py-2 text-base ${!isValid && local.points !== "" ? "border-red-400" : ""}`}
+                        className={`w-28 input py-2 ${!isValid && local.points !== "" ? "border-red-400" : ""}`}
                         value={local.points}
                         disabled={!canEdit}
                         onChange={(e) =>

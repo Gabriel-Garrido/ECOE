@@ -22,6 +22,7 @@ import Modal from "../../components/ui/Modal";
 import Spinner from "../../components/ui/Spinner";
 import Breadcrumb from "../../components/ui/Breadcrumb";
 import EmptyState from "../../components/ui/EmptyState";
+import ConfirmDialog from "../../components/ui/ConfirmDialog";
 import { useToast } from "../../context/ToastContext";
 
 /** Normalize decimal input: replace comma with dot for consistent parsing */
@@ -62,6 +63,8 @@ export default function StationDetailPage() {
   );
   const [variantOpen, setVariantOpen] = useState(false);
   const [variantForm, setVariantForm] = useState({ name: "", description: "" });
+  const [deleteItemId, setDeleteItemId] = useState<number | null>(null);
+  const [deleteVariantId, setDeleteVariantId] = useState<number | null>(null);
   const rubricFileRef = useRef<HTMLInputElement>(null);
   const saveStatusTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -351,10 +354,7 @@ export default function StationDetailPage() {
                   {item.max_points} pts
                 </span>
                 <button
-                  onClick={() => {
-                    if (confirm("¿Eliminar este ítem?"))
-                      deleteItemMutation.mutate(item.id);
-                  }}
+                  onClick={() => setDeleteItemId(item.id)}
                   className="text-gray-300 hover:text-red-500 transition-colors flex-shrink-0"
                 >
                   <svg
@@ -463,7 +463,7 @@ export default function StationDetailPage() {
                       <input
                         type="text"
                         inputMode="decimal"
-                        className="w-24 input py-1 text-sm"
+                        className="w-24 input py-1 text-base sm:text-sm"
                         value={row.raw_points}
                         placeholder="0.00"
                         onChange={(e) => {
@@ -479,7 +479,7 @@ export default function StationDetailPage() {
                       <input
                         type="text"
                         inputMode="decimal"
-                        className="w-20 input py-1 text-sm"
+                        className="w-20 input py-1 text-base sm:text-sm"
                         value={row.grade}
                         placeholder="1.0 – 7.0"
                         onChange={(e) => {
@@ -674,10 +674,7 @@ export default function StationDetailPage() {
                   )}
                 </div>
                 <button
-                  onClick={() => {
-                    if (confirm("¿Eliminar esta variante?"))
-                      deleteVariantMutation.mutate(v.id);
-                  }}
+                  onClick={() => setDeleteVariantId(v.id)}
                   className="text-gray-300 hover:text-red-500 transition-colors flex-shrink-0"
                 >
                   <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -729,6 +726,31 @@ export default function StationDetailPage() {
           </div>
         </div>
       </Modal>
+
+      <ConfirmDialog
+        isOpen={deleteItemId !== null}
+        onConfirm={() => {
+          if (deleteItemId !== null) deleteItemMutation.mutate(deleteItemId);
+          setDeleteItemId(null);
+        }}
+        onCancel={() => setDeleteItemId(null)}
+        title="Eliminar Ítem"
+        message="¿Eliminar este ítem de evaluación?"
+        confirmLabel="Eliminar"
+        confirmVariant="danger"
+      />
+      <ConfirmDialog
+        isOpen={deleteVariantId !== null}
+        onConfirm={() => {
+          if (deleteVariantId !== null) deleteVariantMutation.mutate(deleteVariantId);
+          setDeleteVariantId(null);
+        }}
+        onCancel={() => setDeleteVariantId(null)}
+        title="Eliminar Variante"
+        message="¿Eliminar esta variante?"
+        confirmLabel="Eliminar"
+        confirmVariant="danger"
+      />
     </div>
   );
 }

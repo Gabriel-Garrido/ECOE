@@ -11,6 +11,12 @@ const logos = {
   square: logoSquare,
 } as const;
 
+const dimensions: Record<LogoVariant, { width: number; height: number }> = {
+  horizontal: { width: 992, height: 172 },
+  vertical: { width: 570, height: 482 },
+  square: { width: 225, height: 224 },
+};
+
 type LogoVariant = keyof typeof logos;
 
 interface AppLogoProps {
@@ -27,10 +33,13 @@ export default function AppLogo({
   alt = "Universidad Mayor",
   darkBg = false,
 }: AppLogoProps) {
+  const dim = dimensions[variant];
   const img = (
     <img
       src={logos[variant]}
       alt={alt}
+      width={dim.width}
+      height={dim.height}
       className={clsx("object-contain", className)}
       draggable={false}
     />

@@ -12,7 +12,7 @@ interface BreadcrumbProps {
 
 export default function Breadcrumb({ items }: BreadcrumbProps) {
   return (
-    <nav className="flex items-center gap-2 text-sm text-gray-500 mb-4">
+    <nav aria-label="Migas de pan" className="flex items-center gap-2 text-sm text-gray-500 mb-4">
       {items.map((item, index) => (
         <React.Fragment key={index}>
           {index > 0 && <span className="text-gray-300">/</span>}

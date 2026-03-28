@@ -9,6 +9,7 @@ import Button from "../../components/ui/Button";
 import { ExamStatusBadge } from "../../components/ui/Badge";
 import Breadcrumb from "../../components/ui/Breadcrumb";
 import Spinner from "../../components/ui/Spinner";
+import ConfirmDialog from "../../components/ui/ConfirmDialog";
 import { useToast } from "../../context/ToastContext";
 import ExamSetupChecklist from "../../components/ExamSetupChecklist";
 import StationsTab from "./tabs/StationsTab";
@@ -30,6 +31,8 @@ export default function ExamDetailPage() {
   const qc = useQueryClient();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("stations");
+  const [publishConfirm, setPublishConfirm] = useState(false);
+  const [closeConfirm, setCloseConfirm] = useState(false);
 
   const { data: exam, isLoading } = useQuery({
     queryKey: ["exam", id],
@@ -184,10 +187,7 @@ export default function ExamDetailPage() {
           <div className="flex gap-2">
             {exam.status === "DRAFT" && (
               <Button
-                onClick={() => {
-                  if (confirm("¿Publicar esta evaluación?"))
-                    publishMutation.mutate();
-                }}
+                onClick={() => setPublishConfirm(true)}
                 loading={publishMutation.isPending}
               >
                 Publicar
@@ -196,14 +196,7 @@ export default function ExamDetailPage() {
             {exam.status === "PUBLISHED" && (
               <Button
                 variant="danger"
-                onClick={() => {
-                  if (
-                    confirm(
-                      "¿Cerrar esta evaluación? Solo el coordinador podrá exportar resultados.",
-                    )
-                  )
-                    closeMutation.mutate();
-                }}
+                onClick={() => setCloseConfirm(true)}
                 loading={closeMutation.isPending}
               >
                 Cerrar
@@ -253,6 +246,30 @@ export default function ExamDetailPage() {
         {activeTab === "results" && <ResultsTab exam={exam} />}
         {activeTab === "audit" && <AuditTab examId={id} />}
       </div>
+
+      <ConfirmDialog
+        isOpen={publishConfirm}
+        onConfirm={() => {
+          setPublishConfirm(false);
+          publishMutation.mutate();
+        }}
+        onCancel={() => setPublishConfirm(false)}
+        title="Publicar Evaluación"
+        message="¿Publicar esta evaluación? Los evaluadores podrán comenzar a evaluar."
+        confirmLabel="Publicar"
+      />
+      <ConfirmDialog
+        isOpen={closeConfirm}
+        onConfirm={() => {
+          setCloseConfirm(false);
+          closeMutation.mutate();
+        }}
+        onCancel={() => setCloseConfirm(false)}
+        title="Cerrar Evaluación"
+        message="¿Cerrar esta evaluación? Solo el coordinador podrá exportar resultados."
+        confirmLabel="Cerrar"
+        confirmVariant="danger"
+      />
     </div>
   );
 }
