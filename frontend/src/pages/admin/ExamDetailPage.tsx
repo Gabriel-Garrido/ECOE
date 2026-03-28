@@ -59,6 +59,7 @@ export default function ExamDetailPage() {
     mutationFn: () => publishExam(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["exam", id] });
+      qc.invalidateQueries({ queryKey: ["exams"] });
       toast.success("Evaluación publicada exitosamente");
     },
     onError: (e: unknown) => {
@@ -72,6 +73,7 @@ export default function ExamDetailPage() {
     mutationFn: () => closeExam(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["exam", id] });
+      qc.invalidateQueries({ queryKey: ["exams"] });
       toast.success("Evaluación cerrada");
     },
     onError: () => toast.error("Error al cerrar la evaluación."),

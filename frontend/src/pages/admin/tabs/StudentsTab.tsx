@@ -33,6 +33,7 @@ export default function StudentsTab({ exam }: Props) {
     mutationFn: (file: File) => importStudentsXlsx(exam.id, file),
     onSuccess: (result) => {
       qc.invalidateQueries({ queryKey: ["exam-students", exam.id] });
+      qc.invalidateQueries({ queryKey: ["exam", exam.id] });
       setImportResult(result);
       toast.success("Importación completada");
     },
@@ -49,6 +50,7 @@ export default function StudentsTab({ exam }: Props) {
     mutationFn: () => addStudentToExam(exam.id, addForm),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["exam-students", exam.id] });
+      qc.invalidateQueries({ queryKey: ["exam", exam.id] });
       setAddOpen(false);
       setAddForm({ rut: "", full_name: "", email: "" });
       toast.success("Estudiante agregado");

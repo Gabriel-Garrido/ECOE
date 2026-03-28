@@ -82,6 +82,7 @@ export default function EvaluateStudentPage() {
     mutationFn: () => finalizeEvaluation(evalId),
     onSuccess: (updated) => {
       qc.setQueryData(["evaluation", evalId], updated);
+      qc.invalidateQueries({ queryKey: ["station-evaluations", updated.station] });
       setFinalizeOpen(false);
       toast.success("Evaluación finalizada exitosamente");
     },

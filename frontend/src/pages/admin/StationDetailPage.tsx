@@ -172,6 +172,7 @@ export default function StationDetailPage() {
       setScaleDirty(false);
       // Update query cache directly to avoid re-fetch overwriting local state
       qc.setQueryData(["grade-scale", stationIdNum], data);
+      qc.invalidateQueries({ queryKey: ["stations", examIdNum] });
       _showSaveStatus("saved");
       toast.success("Escala guardada exitosamente");
     },
@@ -197,6 +198,7 @@ export default function StationDetailPage() {
       setScaleRows(data);
       setScaleDirty(false);
       setGenerateOpen(false);
+      qc.invalidateQueries({ queryKey: ["stations", examIdNum] });
       _showSaveStatus("saved");
     },
     onError: (e: unknown) =>

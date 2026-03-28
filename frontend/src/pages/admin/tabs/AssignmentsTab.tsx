@@ -49,6 +49,7 @@ export default function AssignmentsTab({ exam }: Props) {
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["assignments", exam.id] });
+      qc.invalidateQueries({ queryKey: ["exam", exam.id] });
       setAddOpen(false);
       setForm({ station: "", evaluator: "" });
       toast.success("Evaluador asignado");
@@ -70,8 +71,10 @@ export default function AssignmentsTab({ exam }: Props) {
 
   const deleteMutation = useMutation({
     mutationFn: deleteAssignment,
-    onSuccess: () =>
-      qc.invalidateQueries({ queryKey: ["assignments", exam.id] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["assignments", exam.id] });
+      qc.invalidateQueries({ queryKey: ["exam", exam.id] });
+    },
   });
 
   const isClosed = exam.status === "CLOSED";

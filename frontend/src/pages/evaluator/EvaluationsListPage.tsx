@@ -1,6 +1,6 @@
 import React from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getExamStudents } from "../../api/students";
 import {
   getStationEvaluations,
@@ -23,6 +23,7 @@ export default function EvaluationsListPage() {
   const stationIdNum = Number(stationId);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const qc = useQueryClient();
 
   const { data: exam } = useQuery({
     queryKey: ["exam", examIdNum],
@@ -56,6 +57,7 @@ export default function EvaluationsListPage() {
     mutationFn: (studentId: number) =>
       getOrCreateDraftEvaluation(stationIdNum, studentId),
     onSuccess: (evaluation) => {
+      qc.invalidateQueries({ queryKey: ["station-evaluations", stationIdNum] });
       navigate(`/evaluador/evaluaciones/${evaluation.id}`);
     },
     onError: () => toast.error("Error al iniciar la evaluación."),

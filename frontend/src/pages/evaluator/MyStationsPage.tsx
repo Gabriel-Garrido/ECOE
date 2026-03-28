@@ -56,7 +56,7 @@ export default function MyStationsPage() {
 
 function ExamStationsSection({ exam }: { exam: Exam }) {
   const { data: stations = [], isLoading } = useQuery({
-    queryKey: ["my-stations", exam.id],
+    queryKey: ["stations", exam.id],
     queryFn: () => getStations(exam.id),
   });
 

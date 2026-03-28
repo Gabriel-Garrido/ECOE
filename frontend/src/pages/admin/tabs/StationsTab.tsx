@@ -41,6 +41,7 @@ export default function StationsTab({ exam }: Props) {
     }) => createStation(exam.id, d),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["stations", exam.id] });
+      qc.invalidateQueries({ queryKey: ["exam", exam.id] });
       setCreateOpen(false);
       toast.success("Estación creada");
     },
@@ -56,13 +57,17 @@ export default function StationsTab({ exam }: Props) {
       updateStation(id, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["stations", exam.id] });
+      qc.invalidateQueries({ queryKey: ["exam", exam.id] });
       setEditStation(null);
     },
   });
 
   const toggleMutation = useMutation({
     mutationFn: toggleStation,
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["stations", exam.id] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["stations", exam.id] });
+      qc.invalidateQueries({ queryKey: ["exam", exam.id] });
+    },
   });
 
   const isClosed = exam.status === "CLOSED";
