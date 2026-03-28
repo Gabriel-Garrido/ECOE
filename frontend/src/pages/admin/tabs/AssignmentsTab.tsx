@@ -89,7 +89,7 @@ export default function AssignmentsTab({ exam }: Props) {
         <div>
           <h2>Asignaciones de Evaluadores</h2>
           <p className="text-sm text-gray-500 mt-0.5">
-            Cada estación activa necesita al menos un evaluador asignado
+            Cada estación activa necesita al menos un evaluador asignado para que pueda ser publicada.
           </p>
         </div>
         {!isClosed && (

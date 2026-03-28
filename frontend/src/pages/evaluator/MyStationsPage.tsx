@@ -33,7 +33,7 @@ export default function MyStationsPage() {
       <div className="mb-6">
         <h1>Mis Estaciones</h1>
         <p className="text-gray-500 text-sm mt-1">
-          Hola, {user?.first_name}. Estas son tus estaciones asignadas.
+          Hola, {user?.first_name}. Selecciona una estación para comenzar a evaluar estudiantes.
         </p>
       </div>
 

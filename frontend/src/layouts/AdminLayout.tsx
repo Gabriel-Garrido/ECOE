@@ -59,7 +59,7 @@ export default function AdminLayout() {
     <div className={clsx("flex flex-col h-full", mobile ? "" : "w-64")}>
       {/* Logo */}
       <div className="flex items-center justify-center px-5 py-6 border-b border-white/10">
-        <AppLogo variant="horizontal" className="h-10" />
+        <AppLogo variant="horizontal" className="h-10" darkBg />
       </div>
 
       {/* Nav */}

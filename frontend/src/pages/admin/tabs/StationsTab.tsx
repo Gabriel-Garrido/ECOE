@@ -80,6 +80,9 @@ export default function StationsTab({ exam }: Props) {
         <div>
           <h2>Estaciones</h2>
           <p className="text-sm text-gray-500 mt-0.5">
+            Cada estación representa un punto de evaluación. La suma de ponderaciones activas debe ser 100%.
+          </p>
+          <p className="text-sm text-gray-500 mt-0.5">
             Ponderación total activa:{" "}
             <span className="font-medium">
               {stations
@@ -138,27 +141,29 @@ export default function StationsTab({ exam }: Props) {
                   </td>
                   <td className="px-4 py-3">
                     {!isClosed ? (
-                      <input
-                        type="number"
-                        min="0"
-                        max="100"
-                        step="0.01"
-                        defaultValue={station.weight_percent}
-                        className="w-20 input py-1 text-center"
-                        onBlur={(e) => {
-                          const val = e.target.value;
-                          if (val !== station.weight_percent) {
-                            updateMutation.mutate({
-                              id: station.id,
-                              data: { weight_percent: val },
-                            });
-                          }
-                        }}
-                      />
+                      <span className="inline-flex items-center gap-1">
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="0.01"
+                          defaultValue={station.weight_percent}
+                          className="w-20 input py-1 text-center"
+                          onBlur={(e) => {
+                            const val = e.target.value;
+                            if (val !== station.weight_percent) {
+                              updateMutation.mutate({
+                                id: station.id,
+                                data: { weight_percent: val },
+                              });
+                            }
+                          }}
+                        />
+                        <span className="text-gray-400">%</span>
+                      </span>
                     ) : (
                       <span>{station.weight_percent}%</span>
                     )}
-                    <span className="ml-1 text-gray-400">%</span>
                   </td>
                   <td className="px-4 py-3">
                     {station.is_active ? (
@@ -265,6 +270,7 @@ function StationForm({
         max="100"
         step="0.01"
         {...register("weight_percent")}
+        helpText="Porcentaje que representa esta estación en la nota final"
       />
       <div className="flex gap-3 justify-end pt-2">
         <Button variant="secondary" type="button" onClick={onCancel}>

@@ -8,7 +8,6 @@ import { login } from "../../api/auth";
 import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
 import AppLogo from "../../components/AppLogo";
-import brandDivider from "@/assets/branding/ui/brand-divider-dark-gray-transparent.png";
 
 const schema = z.object({
   email: z.string().email("Correo electrónico inválido"),
@@ -57,15 +56,9 @@ export default function LoginPage() {
     <div className="min-h-screen bg-neutral-dark flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
         {/* Logo */}
-        <div className="flex flex-col items-center mb-8">
-          <AppLogo variant="vertical" className="h-36 mb-4" />
-          <img
-            src={brandDivider}
-            alt=""
-            className="w-48 opacity-40 mb-3"
-            draggable={false}
-          />
-          <p className="text-gray-400 text-sm tracking-wide">
+        <div className="flex flex-col items-center gap-4 mb-8">
+          <AppLogo variant="vertical" className="h-36" darkBg />
+          <p className="text-gray-300 text-sm tracking-wide">
             Plataforma de evaluaciones clínicas
           </p>
         </div>
@@ -112,7 +105,7 @@ export default function LoginPage() {
           </form>
         </div>
 
-        <p className="text-center text-gray-500 text-xs mt-6">
+        <p className="text-center text-gray-400 text-xs mt-6">
           Quismart · Plataforma de evaluaciones clínicas
         </p>
       </div>

@@ -84,6 +84,9 @@ export default function EvaluationsListPage() {
         <p className="text-gray-500 text-sm mt-1">
           {exam?.name} · {examStudents.length} estudiantes
         </p>
+        <p className="text-gray-400 text-xs mt-1">
+          Presiona "Evaluar" para iniciar o "Continuar" para retomar. Las evaluaciones finalizadas no se pueden editar.
+        </p>
       </div>
 
       {/* Stats */}

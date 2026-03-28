@@ -105,7 +105,7 @@ export default function ExamsListPage() {
         <div>
           <h1>Evaluaciones</h1>
           <p className="text-gray-500 text-sm mt-1">
-            Gestión de evaluaciones clínicas
+            Crea y gestiona evaluaciones clínicas. Cada evaluación tiene estaciones, estudiantes y evaluadores.
           </p>
         </div>
         <Button onClick={() => setCreateOpen(true)}>+ Nueva evaluación</Button>
@@ -233,6 +233,9 @@ export default function ExamsListPage() {
         title="Nueva Evaluación"
       >
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <p className="text-sm text-gray-500">
+            Después de crear la evaluación, podrás agregar estaciones, cargar pautas, inscribir estudiantes y asignar evaluadores.
+          </p>
           <Input
             label="Nombre"
             error={errors.name?.message}

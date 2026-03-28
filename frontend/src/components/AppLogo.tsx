@@ -17,14 +17,17 @@ interface AppLogoProps {
   variant?: LogoVariant;
   className?: string;
   alt?: string;
+  /** Wrap transparent logos in a white container for contrast on dark backgrounds */
+  darkBg?: boolean;
 }
 
 export default function AppLogo({
   variant = "horizontal",
   className,
   alt = "Universidad Mayor",
+  darkBg = false,
 }: AppLogoProps) {
-  return (
+  const img = (
     <img
       src={logos[variant]}
       alt={alt}
@@ -32,4 +35,14 @@ export default function AppLogo({
       draggable={false}
     />
   );
+
+  if (darkBg && variant !== "square") {
+    return (
+      <div className="bg-white rounded-lg px-3 py-1.5 inline-flex items-center justify-center">
+        {img}
+      </div>
+    );
+  }
+
+  return img;
 }

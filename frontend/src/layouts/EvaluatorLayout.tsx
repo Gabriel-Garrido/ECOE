@@ -18,7 +18,7 @@ export default function EvaluatorLayout() {
       <header className="bg-neutral-dark text-white shadow-md sticky top-0 z-10">
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
           <Link to="/evaluador/mis-estaciones" className="flex items-center gap-3 hover:opacity-90 transition-opacity">
-            <AppLogo variant="horizontal" className="h-8 hidden sm:block" />
+            <AppLogo variant="horizontal" className="h-8 hidden sm:block" darkBg />
             <AppLogo variant="square" className="h-8 w-8 rounded sm:hidden" />
           </Link>
           <div className="flex items-center gap-4">

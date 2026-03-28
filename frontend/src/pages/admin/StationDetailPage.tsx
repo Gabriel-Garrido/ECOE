@@ -9,10 +9,13 @@ import {
   updateGradeScale,
   generateGradeScale,
   importRubricXlsx,
+  getStationVariants,
+  createStationVariant,
+  deleteStationVariant,
 } from "../../api/stations";
 import { getStations } from "../../api/stations";
 import { getExam } from "../../api/exams";
-import type { GradeScalePoint, ImportXlsxResult } from "../../types";
+import type { GradeScalePoint, ImportXlsxResult, StationVariant } from "../../types";
 import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
 import Modal from "../../components/ui/Modal";
@@ -20,6 +23,11 @@ import Spinner from "../../components/ui/Spinner";
 import Breadcrumb from "../../components/ui/Breadcrumb";
 import EmptyState from "../../components/ui/EmptyState";
 import { useToast } from "../../context/ToastContext";
+
+/** Normalize decimal input: replace comma with dot for consistent parsing */
+function normalizeDecimal(value: string): string {
+  return value.replace(",", ".");
+}
 
 export default function StationDetailPage() {
   const { examId, stationId } = useParams<{
@@ -52,6 +60,8 @@ export default function StationDetailPage() {
   const [importResult, setImportResult] = useState<ImportXlsxResult | null>(
     null,
   );
+  const [variantOpen, setVariantOpen] = useState(false);
+  const [variantForm, setVariantForm] = useState({ name: "", description: "" });
   const rubricFileRef = useRef<HTMLInputElement>(null);
   const saveStatusTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -76,6 +86,12 @@ export default function StationDetailPage() {
   const { data: gradeScale = [], isLoading: scaleLoading } = useQuery({
     queryKey: ["grade-scale", stationIdNum],
     queryFn: () => getGradeScale(stationIdNum),
+    enabled: !!stationIdNum,
+  });
+
+  const { data: variants = [] } = useQuery({
+    queryKey: ["station-variants", stationIdNum],
+    queryFn: () => getStationVariants(stationIdNum),
     enabled: !!stationIdNum,
   });
 
@@ -157,9 +173,11 @@ export default function StationDetailPage() {
       // Update query cache directly to avoid re-fetch overwriting local state
       qc.setQueryData(["grade-scale", stationIdNum], data);
       _showSaveStatus("saved");
+      toast.success("Escala guardada exitosamente");
     },
     onError: () => {
       _showSaveStatus("error", 4000);
+      toast.error("Error al guardar la escala. Revisa los valores ingresados.");
     },
   });
 
@@ -188,6 +206,35 @@ export default function StationDetailPage() {
       ),
   });
 
+  const addVariantMutation = useMutation({
+    mutationFn: () =>
+      createStationVariant(stationIdNum, {
+        name: variantForm.name,
+        description: variantForm.description,
+        order: variants.length + 1,
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["station-variants", stationIdNum] });
+      setVariantOpen(false);
+      setVariantForm({ name: "", description: "" });
+      toast.success("Variante creada");
+    },
+    onError: (e: unknown) =>
+      toast.error(
+        (e as { response?: { data?: { detail?: string } } })?.response?.data
+          ?.detail || "Error al crear variante.",
+      ),
+  });
+
+  const deleteVariantMutation = useMutation({
+    mutationFn: deleteStationVariant,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["station-variants", stationIdNum] });
+      toast.success("Variante eliminada");
+    },
+    onError: () => toast.error("Error al eliminar variante."),
+  });
+
   const maxPointsTotal = rubricItems.reduce(
     (s, i) => s + parseFloat(i.max_points),
     0,
@@ -203,7 +250,10 @@ export default function StationDetailPage() {
         ]}
       />
 
-      <h1 className="mb-6">{station?.name} – Pauta y Escala de Notas</h1>
+      <h1 className="mb-1">{station?.name} – Pauta y Escala de Notas</h1>
+      <p className="text-sm text-gray-500 mb-6">
+        Configura los ítems de evaluación, la escala de notas y las variantes de esta estación.
+      </p>
 
       {/* Section: Rubric Items */}
       <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6 shadow-sm">
@@ -269,6 +319,10 @@ export default function StationDetailPage() {
             )}
           </div>
         )}
+
+        <div className="mb-4 p-3 rounded-lg bg-gray-50 border border-gray-200 text-xs text-gray-500">
+          <strong className="text-gray-700">Importar desde Excel:</strong> El archivo debe tener columnas <code className="bg-white px-1 rounded">descripcion</code> y <code className="bg-white px-1 rounded">puntaje</code>. Opcionalmente puede incluir <code className="bg-white px-1 rounded">orden</code>. Los ítems se agregarán a los existentes.
+        </div>
 
         {itemsLoading ? (
           <Spinner />
@@ -405,12 +459,15 @@ export default function StationDetailPage() {
                   <tr key={idx} className="border-b border-gray-50">
                     <td className="px-3 py-1.5">
                       <input
-                        type="number"
+                        type="text"
+                        inputMode="decimal"
                         className="w-24 input py-1 text-sm"
                         value={row.raw_points}
+                        placeholder="0.00"
                         onChange={(e) => {
+                          const val = normalizeDecimal(e.target.value);
                           const newRows = [...scaleRows];
-                          newRows[idx] = { ...row, raw_points: e.target.value };
+                          newRows[idx] = { ...row, raw_points: val };
                           setScaleRows(newRows);
                           setScaleDirty(true);
                         }}
@@ -418,15 +475,15 @@ export default function StationDetailPage() {
                     </td>
                     <td className="px-3 py-1.5">
                       <input
-                        type="number"
-                        min="1.0"
-                        max="7.0"
-                        step="0.01"
+                        type="text"
+                        inputMode="decimal"
                         className="w-20 input py-1 text-sm"
                         value={row.grade}
+                        placeholder="1.0 – 7.0"
                         onChange={(e) => {
+                          const val = normalizeDecimal(e.target.value);
                           const newRows = [...scaleRows];
-                          newRows[idx] = { ...row, grade: e.target.value };
+                          newRows[idx] = { ...row, grade: val };
                           setScaleRows(newRows);
                           setScaleDirty(true);
                         }}
@@ -574,6 +631,98 @@ export default function StationDetailPage() {
               loading={generateMutation.isPending}
             >
               Generar
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Section: Station Variants */}
+      <div className="bg-white rounded-xl border border-gray-200 p-6 mt-6 shadow-sm">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2>Variantes de la Estación</h2>
+            <p className="text-sm text-gray-500 mt-0.5">
+              Crea versiones alternativas del caso clínico para evitar que los estudiantes memoricen las preguntas.
+            </p>
+          </div>
+          <Button size="sm" onClick={() => setVariantOpen(true)}>
+            + Agregar variante
+          </Button>
+        </div>
+
+        {variants.length === 0 ? (
+          <div className="p-4 rounded-lg bg-gray-50 border border-gray-200 text-sm text-gray-500 text-center">
+            <p className="mb-1">No hay variantes configuradas.</p>
+            <p className="text-xs">Si siempre usas el mismo caso clínico, no necesitas variantes. Agrégalas solo si quieres rotar el contenido entre estudiantes.</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {variants.map((v, idx) => (
+              <div
+                key={v.id}
+                className="flex items-start gap-4 p-3 rounded-lg border border-gray-100 hover:bg-gray-50"
+              >
+                <span className="text-gray-400 text-sm pt-0.5 w-6 flex-shrink-0">
+                  {idx + 1}.
+                </span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium">{v.name}</p>
+                  {v.description && (
+                    <p className="text-xs text-gray-500 mt-0.5 truncate">{v.description}</p>
+                  )}
+                </div>
+                <button
+                  onClick={() => {
+                    if (confirm("¿Eliminar esta variante?"))
+                      deleteVariantMutation.mutate(v.id);
+                  }}
+                  className="text-gray-300 hover:text-red-500 transition-colors flex-shrink-0"
+                >
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Add variant modal */}
+      <Modal
+        isOpen={variantOpen}
+        onClose={() => setVariantOpen(false)}
+        title="Agregar Variante"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-gray-500">
+            Cada variante representa una versión alternativa del caso clínico. Los estudiantes pueden recibir variantes distintas para evitar que se pasen las respuestas.
+          </p>
+          <Input
+            label="Nombre de la variante"
+            placeholder='Ej: "Caso A", "Variante 2"'
+            value={variantForm.name}
+            onChange={(e) => setVariantForm((f) => ({ ...f, name: e.target.value }))}
+          />
+          <div>
+            <label className="label">Descripción del caso (opcional)</label>
+            <textarea
+              className="input min-h-[80px] resize-y"
+              placeholder="Describe el escenario clínico de esta variante..."
+              value={variantForm.description}
+              onChange={(e) => setVariantForm((f) => ({ ...f, description: e.target.value }))}
+            />
+          </div>
+          <div className="flex gap-3 justify-end pt-2">
+            <Button variant="secondary" onClick={() => setVariantOpen(false)}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={() => addVariantMutation.mutate()}
+              loading={addVariantMutation.isPending}
+              disabled={!variantForm.name}
+            >
+              Crear variante
             </Button>
           </div>
         </div>

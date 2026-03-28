@@ -70,7 +70,7 @@ export default function UsersPage() {
         <div>
           <h1>Usuarios</h1>
           <p className="text-gray-500 text-sm mt-1">
-            Gestión de cuentas de evaluadores
+            Crea cuentas para evaluadores y gestiona su estado. Los evaluadores activos pueden ser asignados a estaciones.
           </p>
         </div>
         <Button onClick={() => setCreateOpen(true)}>+ Nuevo evaluador</Button>
@@ -134,6 +134,9 @@ export default function UsersPage() {
         title="Nuevo Evaluador"
       >
         <div className="space-y-4">
+          <p className="text-sm text-gray-500">
+            El evaluador recibirá acceso al sistema con las credenciales que definas aquí. Comparte el correo y contraseña con el usuario.
+          </p>
           <div className="grid grid-cols-2 gap-4">
             <Input
               label="Nombre"

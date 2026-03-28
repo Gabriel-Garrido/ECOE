@@ -80,11 +80,13 @@ export default function StudentsTab({ exam }: Props) {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
-        <h2>Estudiantes ({examStudents.length})</h2>
-        <p className="text-sm text-gray-500 mt-0.5">
-          Los estudiantes serán evaluados en todas las estaciones activas
-        </p>
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+        <div>
+          <h2>Estudiantes ({examStudents.length})</h2>
+          <p className="text-sm text-gray-500 mt-0.5">
+            Los estudiantes serán evaluados en todas las estaciones activas
+          </p>
+        </div>
         {!isClosed && (
           <div className="flex gap-2">
             <input
@@ -112,10 +114,13 @@ export default function StudentsTab({ exam }: Props) {
       {/* Import result */}
       {importResult && (
         <div className="mb-4 bg-green-50 border border-green-200 rounded-lg p-4">
-          <p className="text-green-800 font-medium text-sm">
-            Importación completada: {importResult.created} creados,{" "}
-            {importResult.updated} actualizados.
-          </p>
+          <div className="flex items-center justify-between">
+            <p className="text-green-800 font-medium text-sm">
+              Importación completada: {importResult.created} creados,{" "}
+              {importResult.updated} actualizados.
+            </p>
+            <button onClick={() => setImportResult(null)} className="text-gray-400 hover:text-gray-600">×</button>
+          </div>
           {importResult.errors.length > 0 && (
             <ul className="mt-2 text-red-700 text-xs space-y-0.5">
               {importResult.errors.map((err, i) => (
@@ -125,6 +130,10 @@ export default function StudentsTab({ exam }: Props) {
           )}
         </div>
       )}
+
+      <div className="mb-4 p-3 rounded-lg bg-gray-50 border border-gray-200 text-xs text-gray-500">
+        <strong className="text-gray-700">Formato del archivo Excel:</strong> El archivo debe tener columnas <code className="bg-white px-1 rounded">rut</code>, <code className="bg-white px-1 rounded">nombre</code> y opcionalmente <code className="bg-white px-1 rounded">correo</code>. Los estudiantes con RUT duplicado se actualizarán en vez de duplicarse.
+      </div>
 
       {examStudents.length === 0 ? (
         <EmptyState

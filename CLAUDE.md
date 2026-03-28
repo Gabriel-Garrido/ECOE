@@ -43,8 +43,13 @@ Located in `src/assets/branding/logos/`:
 - **Never deform, crop, or stretch logos.** Always use `object-contain`.
 - The `AppLogo` component (`src/components/AppLogo.tsx`) handles all variants.
 
-### Brand Divider
-`src/assets/branding/ui/brand-divider-dark-gray-transparent.png` — decorative strip used on login page.
+### Logo on Dark Backgrounds
+The horizontal and vertical logos have **dark teal text on a transparent background**. They are invisible on dark surfaces.
+- **Always pass `darkBg` prop** when placing `AppLogo` on `neutral-dark`, dark gradients, or any colored bg.
+- `darkBg` wraps the logo in a white rounded container for guaranteed contrast.
+- The `square` variant has its own yellow background — `darkBg` is ignored for it.
+- **Never** place a transparent logo directly on a dark or colored surface without the contrast wrapper.
+- If the white container looks wrong in a specific layout, adjust the container's padding/radius — don't remove it.
 
 ## Architecture
 
@@ -79,3 +84,6 @@ Located in `src/assets/branding/logos/`:
 7. Tables: `bg-gray-50` header, `border-gray-100` rows
 8. Info banners: `bg-brand-teal-light border-brand-teal/20`
 9. Error banners: `bg-brand-red-light border-red-200`
+10. **Decimal inputs**: Use `type="text" inputMode="decimal"` instead of `type="number"` for score/grade inputs. Normalize with `normalizeDecimal()` (comma → dot). Chilean users may type commas.
+11. **Help text**: Add brief `<p className="text-sm text-gray-500">` descriptions under page titles. Use `helpText` prop on `<Input>` for field-level guidance. Keep text actionable and in Spanish.
+12. **Station variants**: The variant system allows multiple versions of a station case. CRUD is at `stations/<id>/variants/`. UI is in StationDetailPage.

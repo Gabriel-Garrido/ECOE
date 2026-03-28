@@ -17,6 +17,11 @@ import Breadcrumb from "../../components/ui/Breadcrumb";
 
 const DEBOUNCE_MS = 1500;
 
+/** Normalize decimal input: replace comma with dot for consistent parsing */
+function normalizeDecimal(value: string): string {
+  return value.replace(",", ".");
+}
+
 export default function EvaluateStudentPage() {
   const { evaluationId } = useParams<{ evaluationId: string }>();
   const evalId = Number(evaluationId);
@@ -69,6 +74,7 @@ export default function EvaluateStudentPage() {
     },
     onError: () => {
       setSaveStatus("idle");
+      toast.error("Error al guardar. Revisa tu conexión e intenta nuevamente.");
     },
   });
 
@@ -125,9 +131,10 @@ export default function EvaluateStudentPage() {
     value: string,
   ) => {
     if (evaluation?.status === "FINAL" && user?.role !== "ADMIN") return;
+    const normalized = field === "points" ? normalizeDecimal(value) : value;
     const updated = {
       ...localScores,
-      [scoreId]: { ...localScores[scoreId], [field]: value },
+      [scoreId]: { ...localScores[scoreId], [field]: normalized },
     };
     setLocalScores(updated);
     setIsDirty(true);
@@ -159,7 +166,10 @@ export default function EvaluateStudentPage() {
   const allItemsComplete =
     evaluation?.item_scores.every((s) => {
       const local = localScores[s.id];
-      return local?.points !== "" && local?.points !== undefined;
+      if (!local || local.points === "" || local.points === undefined) return false;
+      const pts = parseFloat(local.points);
+      const maxPts = parseFloat(s.rubric_item_max_points);
+      return !isNaN(pts) && pts >= 0 && pts <= maxPts;
     }) ?? false;
 
   if (isLoading)
@@ -256,6 +266,11 @@ export default function EvaluateStudentPage() {
       </div>
 
       {/* Rubric items */}
+      {!isFinal && (
+        <div className="mb-3 p-3 rounded-lg bg-brand-teal-light border border-brand-teal/20 text-sm text-brand-teal">
+          Ingresa el puntaje de cada ítem y una observación opcional. Los cambios se guardan automáticamente. Usa punto o coma como separador decimal.
+        </div>
+      )}
       <div className="space-y-3 mb-4">
         {sortedScores.map((score, idx) => {
           const local = localScores[score.id] ?? {
@@ -292,10 +307,8 @@ export default function EvaluateStudentPage() {
                         Puntaje (máx. {score.rubric_item_max_points})
                       </label>
                       <input
-                        type="number"
-                        min="0"
-                        max={score.rubric_item_max_points}
-                        step="0.01"
+                        type="text"
+                        inputMode="decimal"
                         className={`w-28 input py-2 text-base ${!isValid && local.points !== "" ? "border-red-400" : ""}`}
                         value={local.points}
                         disabled={!canEdit}
@@ -375,7 +388,7 @@ export default function EvaluateStudentPage() {
             </Button>
             {!allItemsComplete && (
               <p className="text-xs text-gray-400 mt-1 w-full text-right">
-                Completa todos los ítems para poder finalizar
+                Completa todos los ítems con puntajes válidos para poder finalizar
               </p>
             )}
           </>
